@@ -2,16 +2,23 @@ import React, { useState, useEffect } from "react";
 import { View, Text } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-export default function SessionTimer({ isRunning, isPaused, isStopped }) {
-  const [time, setTime] = useState(0); // الوقت بالثواني
+export default function SessionTimer({ isRunning, isPaused, isStopped, onFrame }) {
+  const [time, setTime] = useState(0);
 
   useEffect(() => {
     let interval = null;
 
     if (isRunning && !isPaused) {
       interval = setInterval(() => {
-        setTime((prev) => prev + 0.01);
-      }, 10);
+        setTime((prev) => {
+          const newTime = prev + 0.1;
+
+          // منع conflict مع Dashboard
+          setTimeout(() => onFrame(newTime), 0);
+
+          return newTime;
+        });
+      }, 100);
     }
 
     if (isPaused) {
@@ -25,11 +32,6 @@ export default function SessionTimer({ isRunning, isPaused, isStopped }) {
 
     return () => clearInterval(interval);
   }, [isRunning, isPaused, isStopped]);
-
-  // تحويل الوقت لصيغة 00:00.00
-  const minutes = Math.floor(time / 60);
-  const seconds = Math.floor(time % 60);
-  const ms = Math.floor((time % 1) * 100);
 
   return (
     <View
@@ -46,7 +48,6 @@ export default function SessionTimer({ isRunning, isPaused, isStopped }) {
         alignItems: "center",
       }}
     >
-      {/* Left side */}
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <MaterialIcons name="timer" size={26} color="#0da6f2" />
         <View style={{ marginLeft: 10 }}>
@@ -55,25 +56,8 @@ export default function SessionTimer({ isRunning, isPaused, isStopped }) {
           </Text>
 
           <Text style={{ color: "white", fontSize: 28, fontWeight: "bold" }}>
-            {String(minutes).padStart(2, "0")}:
-            {String(seconds).padStart(2, "0")}
-            <Text style={{ color: "#0da6f2", fontSize: 20 }}>
-              .{String(ms).padStart(2, "0")}
-            </Text>
+            {time.toFixed(1)}s
           </Text>
-        </View>
-      </View>
-
-      {/* Right side */}
-      <View style={{ alignItems: "flex-end" }}>
-        <Text style={{ color: "#aaa", fontSize: 10, letterSpacing: 2 }}>
-          SENSOR STATUS
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text style={{ color: "#0da6f2", fontSize: 12 }}>
-            MPU6050 Connected
-          </Text>
-          <MaterialIcons name="sensors" size={18} color="#0da6f2" />
         </View>
       </View>
     </View>

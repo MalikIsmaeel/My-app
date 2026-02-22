@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 
-export default function AccelerometerSection() {
+export default function AccelerometerSection({ accel }) {
   return (
     <View style={{ marginTop: 25 }}>
       {/* Title */}
@@ -26,9 +26,9 @@ export default function AccelerometerSection() {
           marginTop: 10,
         }}
       >
-        <AxisCard label="AXIS X" value="42" />
-        <AxisCard label="AXIS Y" value="88" />
-        <AxisCard label="AXIS Z" value="15" />
+        <AxisCard label="AXIS X" value={accel.x} />
+        <AxisCard label="AXIS Y" value={accel.y} />
+        <AxisCard label="AXIS Z" value={accel.z} />
       </View>
     </View>
   );

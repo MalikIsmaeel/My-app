@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 
-export default function GyroscopeSection() {
+export default function GyroscopeSection({ gyro }) {
   return (
     <View style={{ marginTop: 25 }}>
       {/* Title */}
@@ -26,9 +26,9 @@ export default function GyroscopeSection() {
           marginTop: 10,
         }}
       >
-        <AxisCard label="AXIS X" value="09" />
-        <AxisCard label="AXIS Y" value="12" />
-        <AxisCard label="AXIS Z" value="04" />
+        <AxisCard label="AXIS X" value={gyro.x} />
+        <AxisCard label="AXIS Y" value={gyro.y} />
+        <AxisCard label="AXIS Z" value={gyro.z} />
       </View>
     </View>
   );

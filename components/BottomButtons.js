@@ -15,8 +15,6 @@ export default function BottomButtons({ onStart, onPause, onStop }) {
       }}
     >
       <View style={{ flexDirection: "row", marginBottom: 10 }}>
-        
-        {/* START */}
         <TouchableOpacity
           onPress={onStart}
           style={{
@@ -36,7 +34,6 @@ export default function BottomButtons({ onStart, onPause, onStop }) {
           </Text>
         </TouchableOpacity>
 
-        {/* PAUSE */}
         <TouchableOpacity
           onPress={onPause}
           style={{
@@ -54,7 +51,6 @@ export default function BottomButtons({ onStart, onPause, onStop }) {
         </TouchableOpacity>
       </View>
 
-      {/* STOP */}
       <TouchableOpacity
         onPress={onStop}
         style={{
