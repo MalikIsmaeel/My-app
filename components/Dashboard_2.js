@@ -1,5 +1,5 @@
 import React from "react";
-import Header from "./header";
+import Header from "./Header";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -273,7 +273,7 @@ function BottomButtons() {
           }}
         >
           <MaterialIcons name="play-arrow" size={26} color="#000" />
-          <Text style={{ color: "#000", marginLeft: 6, letterSpacing: 2 }}>
+          <Text style={{ color: "#000", marginLeft: 6, letterSpacing: 2 }} onPress={() => console.log("START SESSION")}>
             START SESSION
           </Text>
         </TouchableOpacity>
@@ -315,7 +315,7 @@ function BottomButtons() {
             marginRight: 6,
           }}
         />
-        <Text style={{ color: "#ff007f", letterSpacing: 2 }}>
+        <Text style={{ color: "#ff007f", letterSpacing: 2 }} onPress={() => console.log("END ANALYSIS SESSION")}>
           END ANALYSIS SESSION
         </Text>
       </TouchableOpacity>

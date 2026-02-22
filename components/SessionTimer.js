@@ -1,8 +1,36 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-export default function SessionTimer() {
+export default function SessionTimer({ isRunning, isPaused, isStopped }) {
+  const [time, setTime] = useState(0); // الوقت بالثواني
+
+  useEffect(() => {
+    let interval = null;
+
+    if (isRunning && !isPaused) {
+      interval = setInterval(() => {
+        setTime((prev) => prev + 0.01);
+      }, 10);
+    }
+
+    if (isPaused) {
+      clearInterval(interval);
+    }
+
+    if (isStopped) {
+      clearInterval(interval);
+      setTime(0);
+    }
+
+    return () => clearInterval(interval);
+  }, [isRunning, isPaused, isStopped]);
+
+  // تحويل الوقت لصيغة 00:00.00
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  const ms = Math.floor((time % 1) * 100);
+
   return (
     <View
       style={{
@@ -25,9 +53,13 @@ export default function SessionTimer() {
           <Text style={{ color: "#aaa", fontSize: 10, letterSpacing: 2 }}>
             SESSION TIME
           </Text>
+
           <Text style={{ color: "white", fontSize: 28, fontWeight: "bold" }}>
-            04:25
-            <Text style={{ color: "#0da6f2", fontSize: 20 }}>.82</Text>
+            {String(minutes).padStart(2, "0")}:
+            {String(seconds).padStart(2, "0")}
+            <Text style={{ color: "#0da6f2", fontSize: 20 }}>
+              .{String(ms).padStart(2, "0")}
+            </Text>
           </Text>
         </View>
       </View>

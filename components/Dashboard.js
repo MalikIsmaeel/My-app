@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, ScrollView } from "react-native";
 
 import Header from "./Header";
@@ -10,28 +10,44 @@ import BottomNav from "./BottomNav";
 import BottomButtons from "./BottomButtons";
 
 export default function Dashboard() {
+  const [isRunning, setIsRunning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isStopped, setIsStopped] = useState(false);
+
   return (
     <View style={{ flex: 1, backgroundColor: "#0B0F14", paddingTop: 40 }}>
 
-      {/* المحتوى اللي يتحرك */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: 350, // مهم جداً عشان ما يتغطى المحتوى
-        }}
-      >
+      <ScrollView contentContainerStyle={{ paddingBottom: 350 }}>
         <Header />
-        <SessionTimer />
+
+        <SessionTimer
+          isRunning={isRunning}
+          isPaused={isPaused}
+          isStopped={isStopped}
+        />
+
         <AccelerometerSection />
         <GyroscopeSection />
         <StatsSection />
       </ScrollView>
 
-      {/* شريط التنقل */}
       <BottomNav />
 
-      {/* أزرار الجلسة */}
-      <BottomButtons />
+      <BottomButtons
+        onStart={() => {
+          setIsRunning(true);
+          setIsPaused(false);
+          setIsStopped(false);
+        }}
+        onPause={() => {
+          setIsPaused(true);
+        }}
+        onStop={() => {
+          setIsRunning(false);
+          setIsPaused(false);
+          setIsStopped(true);
+        }}
+      />
     </View>
   );
 }

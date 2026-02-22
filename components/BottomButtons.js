@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-export default function BottomButtons() {
+export default function BottomButtons({ onStart, onPause, onStop }) {
   return (
     <View
       style={{
@@ -14,10 +14,11 @@ export default function BottomButtons() {
         backgroundColor: "#0B0F14",
       }}
     >
-      {/* Start + Pause */}
       <View style={{ flexDirection: "row", marginBottom: 10 }}>
-        {/* START SESSION */}
+        
+        {/* START */}
         <TouchableOpacity
+          onPress={onStart}
           style={{
             flex: 2,
             backgroundColor: "#0da6f2",
@@ -37,6 +38,7 @@ export default function BottomButtons() {
 
         {/* PAUSE */}
         <TouchableOpacity
+          onPress={onPause}
           style={{
             flex: 1,
             backgroundColor: "rgba(255,103,0,0.2)",
@@ -52,8 +54,9 @@ export default function BottomButtons() {
         </TouchableOpacity>
       </View>
 
-      {/* END SESSION */}
+      {/* STOP */}
       <TouchableOpacity
+        onPress={onStop}
         style={{
           backgroundColor: "rgba(255,0,127,0.1)",
           borderWidth: 1,

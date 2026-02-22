@@ -7,7 +7,7 @@ export default function BottomNav() {
     <View
       style={{
         position: "absolute",
-        bottom: 230, // فوق أزرار الـ Session
+        bottom: 240, // فوق أزرار الـ Session
         left: 0,
         right: 0,
         alignItems: "center",
