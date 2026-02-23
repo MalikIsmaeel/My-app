@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { View, ScrollView } from "react-native";
 
-import useSensors from "./useSensors";
+import useSensors from "./Dashboard/useSensors";
 
-import Header from "./Header";
-import SessionTimer from "./SessionTimer";
-import AccelerometerSection from "./AccelerometerSection";
-import GyroscopeSection from "./GyroscopeSection";
-import StatsSection from "./StatsSection";
-import BottomNav from "./BottomNav";
-import BottomButtons from "./BottomButtons";
+import Header from "./Dashboard/Header";
+import SessionTimer from "./Dashboard/SessionTimer";
+import AccelerometerSection from "./Dashboard/AccelerometerSection";
+import GyroscopeSection from "./Dashboard/GyroscopeSection";
+import StatsSection from "./Dashboard/StatsSection";
+import BottomNav from "./Dashboard/BottomNav";
+import BottomButtons from "./Dashboard/BottomButtons";
 
 export default function Dashboard() {
   const { accel, gyro } = useSensors();
