@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { View, ScrollView } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
 import useSensors from "./Dashboard/useSensors";
-
 import Header from "./Dashboard/Header";
 import SessionTimer from "./Dashboard/SessionTimer";
 import AccelerometerSection from "./Dashboard/AccelerometerSection";
@@ -12,6 +12,7 @@ import BottomNav from "./Dashboard/BottomNav";
 import BottomButtons from "./Dashboard/BottomButtons";
 
 export default function Dashboard() {
+  const navigation = useNavigation();
   const { accel, gyro } = useSensors();
 
   const [isRunning, setIsRunning] = useState(false);
@@ -38,9 +39,13 @@ export default function Dashboard() {
     setIsPaused(false);
     setIsStopped(true);
 
-    console.log("SESSION DATA:", frames);
+    const sessionData = {
+      duration: frames.length * 0.1,
+      points: frames.length,
+      frames,
+    };
 
-    setFrames([]);
+    navigation.navigate("SessionAnalysis", { sessionData });
   };
 
   return (

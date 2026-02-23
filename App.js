@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import LandingScreen from './components/LandingScreen';
 import Dashboard from './components/Dashboard';
+import SessionAnalysis from './components/SessionAnalysis';
 
 const Stack = createNativeStackNavigator();
 
@@ -14,6 +15,7 @@ export default function App() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Landing" component={LandingScreen} />
         <Stack.Screen name="Dashboard" component={Dashboard} />
+        <Stack.Screen name="SessionAnalysis" component={SessionAnalysis} />
       </Stack.Navigator>
     </NavigationContainer>
   );
