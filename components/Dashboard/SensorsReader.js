@@ -31,18 +31,18 @@ export default function SensorsReader() {
       <Text style={{ color: "white", fontSize: 16, marginBottom: 10 }}>
         Accelerometer
       </Text>
-      <Text style={{ color: "white" }}>X: {accelData.x.toFixed(3)}</Text>
-      <Text style={{ color: "white" }}>Y: {accelData.y.toFixed(3)}</Text>
-      <Text style={{ color: "white" }}>Z: {accelData.z.toFixed(3)}</Text>
+      <Text style={{ color: "white" }}>X: {accelData.x.toFixed(2)}</Text>
+      <Text style={{ color: "white" }}>Y: {accelData.y.toFixed(2)}</Text>
+      <Text style={{ color: "white" }}>Z: {accelData.z.toFixed(2)}</Text>
 
       <View style={{ height: 20 }} />
 
       <Text style={{ color: "white", fontSize: 16, marginBottom: 10 }}>
         Gyroscope
       </Text>
-      <Text style={{ color: "white" }}>X: {gyroData.x.toFixed(3)}</Text>
-      <Text style={{ color: "white" }}>Y: {gyroData.y.toFixed(3)}</Text>
-      <Text style={{ color: "white" }}>Z: {gyroData.z.toFixed(3)}</Text>
+      <Text style={{ color: "white" }}>X: {gyroData.x.toFixed(2)}</Text>
+      <Text style={{ color: "white" }}>Y: {gyroData.y.toFixed(2)}</Text>
+      <Text style={{ color: "white" }}>Z: {gyroData.z.toFixed(2)}</Text>
     </View>
   );
 }

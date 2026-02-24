@@ -1,16 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  TouchableOpacity,
+  Pressable,
+  Platform,
+  I18nManager,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 export default function LandingScreen() {
   const navigation = useNavigation();
+  const [hover, setHover] = useState(false);
+
+  const isRTL = I18nManager.isRTL; // Arabic = true
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -22,7 +27,12 @@ export default function LandingScreen() {
 
         {/* Decorative Lines */}
         <View style={[styles.line, { top: "25%", opacity: 0.3 }]} />
-        <View style={[styles.line, { top: "50%", opacity: 0.2, transform: [{ scaleX: 0.75 }] }]} />
+        <View
+          style={[
+            styles.line,
+            { top: "50%", opacity: 0.2, transform: [{ scaleX: 0.75 }] },
+          ]}
+        />
         <View style={[styles.line, { top: "75%", opacity: 0.1 }]} />
 
         {/* Logo */}
@@ -45,13 +55,51 @@ export default function LandingScreen() {
           تحليل حركة الجسم وتحويلها لمؤشرات رقمية
         </Text>
 
-        <TouchableOpacity
-          style={styles.startButton}
+        {/* Start Button */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.startButton,
+
+            // مكان الزر حسب اللغة
+            isRTL ? styles.leftPosition : styles.rightPosition,
+
+            // Hover على الويب
+            hover && Platform.OS === "web" && styles.startButtonHover,
+
+            // Hover-like على الموبايل
+            pressed && Platform.OS !== "web" && styles.startButtonHover,
+          ]}
           onPress={() => navigation.navigate("Dashboard")}
+          onMouseEnter={() => Platform.OS === "web" && setHover(true)}
+          onMouseLeave={() => Platform.OS === "web" && setHover(false)}
         >
-          <MaterialIcons name="arrow-forward" size={28} color="#0da6f2" />
-          <Text style={styles.startButtonText}>ابدأ التحليل</Text>
-        </TouchableOpacity>
+          {({ pressed }) => (
+            <>
+              <MaterialIcons
+                name="arrow-forward"
+                size={22}
+                color={
+                  (hover && Platform.OS === "web") ||
+                  (pressed && Platform.OS !== "web")
+                    ? "#000"
+                    : "#0da6f2"
+                }
+              />
+
+              <Text
+                style={[
+                  styles.startButtonText,
+                  (hover && Platform.OS === "web") ||
+                  (pressed && Platform.OS !== "web")
+                    ? { color: "#000" }
+                    : null,
+                ]}
+              >
+                ابدأ التحليل
+              </Text>
+            </>
+          )}
+        </Pressable>
 
         {/* Footer */}
         <Text style={styles.footerText}>
@@ -169,30 +217,54 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
 
+  // Start Button
   startButton: {
-    width: "75%",
-    height: 60,
+    position: "absolute",
+    bottom: 40,
+    width: 150,
+    height: 48,
     backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 50,
+    borderRadius: 40,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
-    marginTop: 50,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+
+    shadowColor: "#0da6f2",
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
+  },
+
+  startButtonHover: {
+    backgroundColor: "#fff",
+    borderColor: "#fff",
+    shadowColor: "#fff",
+    shadowOpacity: 0.8,
+  },
+
+  leftPosition: {
+    left: 20,
+  },
+
+  rightPosition: {
+    right: 20,
   },
 
   startButtonText: {
-    marginLeft: 10,
+    marginLeft: 8,
     color: "#cbd5e1",
-    fontSize: 16,
+    fontSize: 15,
     letterSpacing: 1,
+    fontWeight: "600",
   },
 
   // Footer
   footerText: {
     position: "absolute",
-    bottom: 80,
+    bottom: 100,
     color: "rgba(13,166,242,0.4)",
     fontSize: 12,
     letterSpacing: 2,
@@ -201,7 +273,7 @@ const styles = StyleSheet.create({
   // Dots
   dots: {
     position: "absolute",
-    bottom: 40,
+    bottom: 20,
     flexDirection: "row",
   },
   dot: {
