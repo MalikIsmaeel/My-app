@@ -1,86 +1,16 @@
-import React, { useRef, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  Animated,
-  PanResponder,
-  Dimensions,
-  Platform,
+  TouchableOpacity,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 export default function LandingScreen() {
   const navigation = useNavigation();
-
-  // Slider Logic
-  const sliderX = useRef(new Animated.Value(0)).current;
-  const SLIDER_WIDTH = Dimensions.get("window").width * 0.75;
-  const SLIDE_THRESHOLD = SLIDER_WIDTH - 70;
-
-  // -----------------------------
-  // 📌 MOBILE SLIDER (PanResponder)
-  // -----------------------------
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: () => Platform.OS !== "web",
-
-      onPanResponderMove: (_, gesture) => {
-        if (gesture.dx >= 0 && gesture.dx <= SLIDE_THRESHOLD) {
-          sliderX.setValue(gesture.dx);
-        }
-      },
-
-      onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > SLIDE_THRESHOLD - 20) {
-          navigation.navigate("Dashboard");
-        } else {
-          Animated.spring(sliderX, {
-            toValue: 0,
-            useNativeDriver: false,
-          }).start();
-        }
-      },
-    })
-  ).current;
-
-  // -----------------------------
-  // 📌 WEB SLIDER (Mouse Events)
-  // -----------------------------
-  const [isDragging, setDragging] = useState(false);
-
-  const handleMouseDown = () => {
-    if (Platform.OS === "web") setDragging(true);
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
-
-    const dx = e.nativeEvent.offsetX - 30;
-
-    if (dx >= 0 && dx <= SLIDE_THRESHOLD) {
-      sliderX.setValue(dx);
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (!isDragging) return;
-
-    sliderX.stopAnimation((value) => {
-      if (value > SLIDE_THRESHOLD - 20) {
-        navigation.navigate("Dashboard");
-      } else {
-        Animated.spring(sliderX, {
-          toValue: 0,
-          useNativeDriver: false,
-        }).start();
-      }
-    });
-
-    setDragging(false);
-  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -115,25 +45,13 @@ export default function LandingScreen() {
           تحليل حركة الجسم وتحويلها لمؤشرات رقمية
         </Text>
 
-        {/* Slider Button */}
-        <View
-          style={styles.sliderContainer}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
+        <TouchableOpacity
+          style={styles.startButton}
+          onPress={() => navigation.navigate("Dashboard")}
         >
-          <Animated.View
-            {...(Platform.OS !== "web" ? panResponder.panHandlers : {})}
-            style={[
-              styles.sliderButton,
-              { transform: [{ translateX: sliderX }] },
-            ]}
-          >
-            <MaterialIcons name="arrow-forward" size={28} color="#0da6f2" />
-          </Animated.View>
-
-          <Text style={styles.sliderText}>اسحب لبدء التحليل</Text>
-        </View>
+          <MaterialIcons name="arrow-forward" size={28} color="#0da6f2" />
+          <Text style={styles.startButtonText}>ابدأ التحليل</Text>
+        </TouchableOpacity>
 
         {/* Footer */}
         <Text style={styles.footerText}>
@@ -251,38 +169,21 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
 
-  // Slider
-  sliderContainer: {
+  startButton: {
     width: "75%",
     height: 60,
     backgroundColor: "rgba(255,255,255,0.05)",
     borderRadius: 50,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
-    justifyContent: "center",
     marginTop: 50,
-    overflow: "hidden",
-    position: "relative",
-    cursor: "pointer",
-  },
-
-  sliderButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 50,
-    backgroundColor: "rgba(13,166,242,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(13,166,242,0.4)",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    position: "absolute",
-    left: 0,
   },
 
-  sliderText: {
-    position: "absolute",
-    width: "100%",
-    textAlign: "center",
+  startButtonText: {
+    marginLeft: 10,
     color: "#cbd5e1",
     fontSize: 16,
     letterSpacing: 1,
