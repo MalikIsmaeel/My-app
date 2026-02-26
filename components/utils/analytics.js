@@ -1,8 +1,4 @@
-/* --------------------------------------------------
-   analytics.js — ملف الحسابات المستقل
--------------------------------------------------- */
-
-/* ---------------- GPS: Haversine ---------------- */
+/* ---------------- Haversine ---------------- */
 function haversine(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
 
@@ -23,7 +19,7 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-/* ---------------- GPS حسابات ---------------- */
+/* ---------------- GPS ---------------- */
 
 export function calculateTotalDistance(frames) {
   if (!frames || frames.length < 2) return 0;
@@ -32,11 +28,25 @@ export function calculateTotalDistance(frames) {
   for (let i = 1; i < frames.length; i++) {
     const prev = frames[i - 1].gps;
     const curr = frames[i].gps;
-    if (prev && curr) {
-      total += haversine(prev.lat, prev.lon, curr.lat, curr.lon);
-    }
+
+    if (!prev || !curr) continue;
+    if (!prev.lat || !curr.lat) continue;
+
+    total += haversine(prev.lat, prev.lon, curr.lat, curr.lon);
   }
   return total || 0;
+}
+
+export function calculateMovement(frames) {
+  if (!frames || frames.length < 2) return 0;
+
+  const first = frames[0].gps;
+  const last = frames[frames.length - 1].gps;
+
+  if (!first || !last) return 0;
+  if (!first.lat || !last.lat) return 0;
+
+  return haversine(first.lat, first.lon, last.lat, last.lon) || 0;
 }
 
 export function calculateAverageSpeed(frames) {
@@ -60,21 +70,10 @@ export function getInstantSpeed(frames) {
   return frames[frames.length - 1]?.gps?.speed || 0;
 }
 
-export function calculateMovement(frames) {
-  if (!frames || frames.length < 2) return 0;
-
-  const first = frames[0].gps;
-  const last = frames[frames.length - 1].gps;
-
-  if (!first || !last) return 0;
-
-  return haversine(first.lat, first.lon, last.lat, last.lon) || 0;
-}
-
-/* ---------------- Stability ---------------- */
+/* ---------------- Indicators ---------------- */
 
 export function calculateStability(frames) {
-  if (!frames || !frames.length) return 0;
+  if (!frames.length) return 0;
 
   const aTotals = frames.map(f =>
     Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2)
@@ -84,14 +83,11 @@ export function calculateStability(frames) {
   const variance = aTotals.reduce((a,b)=>a + (b-mean)**2, 0) / aTotals.length;
   const sigma = Math.sqrt(variance);
 
-  const Ks = 1.2;
-  return 100 * Math.exp(-sigma / Ks) || 0;
+  return 100 * Math.exp(-sigma / 1.2) || 0;
 }
 
-/* ---------------- Smoothness ---------------- */
-
 export function calculateSmoothness(frames, dt=0.02) {
-  if (!frames || frames.length < 2) return 0;
+  if (frames.length < 2) return 0;
 
   const aTotals = frames.map(f =>
     Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2)
@@ -103,15 +99,12 @@ export function calculateSmoothness(frames, dt=0.02) {
   }
 
   const rms = Math.sqrt(jerks.reduce((a,b)=>a+b*b,0) / jerks.length);
-  const Ksm = 1.5;
 
-  return 100 * Math.exp(-rms / Ksm) || 0;
+  return 100 * Math.exp(-rms / 1.5) || 0;
 }
 
-/* ---------------- Balance ---------------- */
-
 export function calculateBalance(frames) {
-  if (!frames || !frames.length) return 0;
+  if (!frames.length) return 0;
 
   const rolls = frames.map(f => Math.atan(f.accel.y / f.accel.z));
   const pitch = frames.map(f => Math.atan(-f.accel.x / Math.sqrt(f.accel.y**2 + f.accel.z**2)));
@@ -124,14 +117,11 @@ export function calculateBalance(frames) {
   const sigmaRoll = std(rolls);
   const sigmaPitch = std(pitch);
 
-  const Kb = 0.8;
-  return 100 * Math.exp(-(sigmaRoll + sigmaPitch) / Kb) || 0;
+  return 100 * Math.exp(-(sigmaRoll + sigmaPitch) / 0.8) || 0;
 }
 
-/* ---------------- Control ---------------- */
-
 export function calculateControl(frames) {
-  if (!frames || !frames.length) return 0;
+  if (!frames.length) return 0;
 
   const aTotals = frames.map(f =>
     Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2)
@@ -156,10 +146,8 @@ export function calculateControl(frames) {
   return 100 * Math.abs(r) || 0;
 }
 
-/* ---------------- Mobility ---------------- */
-
 export function calculateMobility(frames, dt=0.02) {
-  if (!frames || !frames.length) return 0;
+  if (!frames.length) return 0;
 
   let v = 0;
   const velocities = [];
@@ -172,16 +160,11 @@ export function calculateMobility(frames, dt=0.02) {
 
   const avgV = velocities.reduce((a,b)=>a+b,0) / velocities.length;
 
-  const Vmin = 0;
-  const Vmax = 3;
-
-  return 100 * ((avgV - Vmin) / (Vmax - Vmin)) || 0;
+  return 100 * (avgV / 3) || 0;
 }
 
-/* ---------------- Load ---------------- */
-
 export function calculateLoad(frames, dt=0.02) {
-  if (!frames || !frames.length) return 0;
+  if (!frames.length) return 0;
 
   let load = 0;
 
@@ -190,8 +173,5 @@ export function calculateLoad(frames, dt=0.02) {
     load += aTotal**2 * dt;
   });
 
-  const LoadMin = 0;
-  const LoadMax = 500;
-
-  return 100 * ((load - LoadMin) / (LoadMax - LoadMin)) || 0;
+  return 100 * (load / 500) || 0;
 }

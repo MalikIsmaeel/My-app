@@ -1,15 +1,8 @@
 import React from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import ScoreCard from "./ScoreCard";
 
-// استدعاء ملف الحسابات المستقل
 import {
   calculateStability,
   calculateSmoothness,
@@ -37,13 +30,11 @@ export default function SessionAnalysis() {
 
   const frames = sessionData.frames || [];
 
-  // GPS
   const totalDistance = calculateTotalDistance(frames);
   const avgSpeed = calculateAverageSpeed(frames);
   const instantSpeed = getInstantSpeed(frames);
   const movement = calculateMovement(frames);
 
-  // Indicators
   const stabilityScore = calculateStability(frames);
   const smoothnessScore = calculateSmoothness(frames);
   const balanceScore = calculateBalance(frames);
@@ -51,22 +42,18 @@ export default function SessionAnalysis() {
   const mobilityScore = calculateMobility(frames);
   const loadScore = calculateLoad(frames);
 
-  const durationSec = sessionData.duration;
-  const durationMin = (durationSec / 60).toFixed(1);
-  const points = sessionData.points;
+  const durationMin = (sessionData.duration / 60).toFixed(1);
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Session Analysis</Text>
           <Text style={styles.headerSubtitle}>Last Session</Text>
-          <Text style={styles.headerSensor}>MPU6050 + GPS ACTIVE</Text>
+          <Text style={styles.headerSensor}>IMU6050 + GPS ACTIVE</Text>
         </View>
 
-        {/* Summary */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Duration</Text>
@@ -75,11 +62,10 @@ export default function SessionAnalysis() {
 
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Data Points</Text>
-            <Text style={styles.statValue}>{(points / 1000).toFixed(1)} <Text style={styles.statUnit}>k</Text></Text>
+            <Text style={styles.statValue}>{(sessionData.points / 1000).toFixed(1)}k</Text>
           </View>
         </View>
 
-        {/* Indicators */}
         <View style={styles.grid}>
           <ScoreCard score={(stabilityScore || 0).toFixed(2)} label="Stability" color="#32FF7E" />
           <ScoreCard score={(balanceScore || 0).toFixed(2)} label="Balance" color="#0da6f2" />
@@ -88,7 +74,6 @@ export default function SessionAnalysis() {
           <ScoreCard score={(mobilityScore || 0).toFixed(2)} label="Mobility" color="#FF3E3E" />
           <ScoreCard score={(loadScore || 0).toFixed(2)} label="Load" color="#32FF7E" />
 
-          {/* GPS */}
           <ScoreCard score={(totalDistance || 0).toFixed(2)} label="Distance (m)" color="#0da6f2" />
           <ScoreCard score={(avgSpeed || 0).toFixed(2)} label="Avg Speed" color="#FFD32A" />
           <ScoreCard score={(instantSpeed || 0).toFixed(2)} label="Instant Speed" color="#FF9F1A" />
@@ -104,37 +89,26 @@ export default function SessionAnalysis() {
   );
 }
 
-/* Styles */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0B0F14" },
   scroll: { padding: 16 },
-  emptyContainer: {
-    flex: 1,
-    backgroundColor: "#0B0F14",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   emptyText: { color: "#fff", fontSize: 18 },
   header: { alignItems: "center", marginBottom: 20 },
-  headerTitle: { fontSize: 26, fontWeight: "700", letterSpacing: 2, color: "#fff" },
-  headerSubtitle: { marginTop: 4, fontSize: 12, color: "#0da6f2", fontWeight: "600" },
-  headerSensor: { fontSize: 10, marginTop: 2, color: "#aaa" },
+  headerTitle: { fontSize: 26, fontWeight: "700", color: "#fff" },
+  headerSubtitle: { fontSize: 12, color: "#0da6f2" },
+  headerSensor: { fontSize: 10, color: "#aaa" },
   statsRow: { flexDirection: "row", gap: 12, marginBottom: 20 },
   statCard: {
     flex: 1,
     backgroundColor: "#111",
     padding: 16,
     borderRadius: 16,
-    borderWidth: 1,
     borderColor: "#0da6f2",
-    shadowColor: "#0da6f2",
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
+    borderWidth: 1,
   },
-  statLabel: { fontSize: 10, color: "#aaa", fontWeight: "700", letterSpacing: 1, marginBottom: 4 },
-  statValue: { fontSize: 22, fontWeight: "700", color: "#fff" },
+  statLabel: { fontSize: 10, color: "#aaa" },
+  statValue: { fontSize: 22, color: "#fff", fontWeight: "700" },
   statUnit: { fontSize: 12, color: "#0da6f2" },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
   button: {
@@ -143,11 +117,6 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 50,
     alignItems: "center",
-    shadowColor: "#0da6f2",
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 10,
   },
-  buttonText: { color: "#fff", fontWeight: "700", letterSpacing: 2 },
+  buttonText: { color: "#fff", fontWeight: "700" },
 });

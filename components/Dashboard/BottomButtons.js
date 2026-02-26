@@ -1,82 +1,112 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
-export default function BottomButtons({ onStart, onPause, onStop }) {
+export default function BottomButtons({
+  isRunning,
+  isPaused,
+  onStart,
+  onPause,
+  onStop,
+  onRefreshGPS,
+}) {
   return (
-    <View
-      style={{
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: 20,
-        backgroundColor: "#0B0F14",
-      }}
-    >
-      <View style={{ flexDirection: "row", marginBottom: 10 }}>
-        <TouchableOpacity
-          onPress={onStart}
-          style={{
-            flex: 2,
-            backgroundColor: "#0da6f2",
-            height: 60,
-            borderRadius: 30,
-            justifyContent: "center",
-            alignItems: "center",
-            flexDirection: "row",
-            marginRight: 10,
-          }}
-        >
-          <MaterialIcons name="play-arrow" size={26} color="#000" />
-          <Text style={{ color: "#000", marginLeft: 6, letterSpacing: 2 }}>
-            START SESSION
-          </Text>
-        </TouchableOpacity>
+    <View style={styles.bottomContainer}>
 
-        <TouchableOpacity
-          onPress={onPause}
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(255,103,0,0.2)",
-            borderWidth: 1,
-            borderColor: "rgba(255,103,0,0.4)",
-            height: 60,
-            borderRadius: 30,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <MaterialIcons name="pause" size={24} color="#ff6700" />
+      {/* START BUTTON */}
+      {!isRunning && (
+        <TouchableOpacity style={styles.startButton} onPress={onStart}>
+          <Text style={styles.startText}>START SESSION</Text>
         </TouchableOpacity>
-      </View>
+      )}
 
-      <TouchableOpacity
-        onPress={onStop}
-        style={{
-          backgroundColor: "rgba(255,0,127,0.1)",
-          borderWidth: 1,
-          borderColor: "rgba(255,0,127,0.3)",
-          height: 45,
-          borderRadius: 30,
-          justifyContent: "center",
-          alignItems: "center",
-          flexDirection: "row",
-        }}
-      >
-        <View
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: "#ff007f",
-            marginRight: 6,
-          }}
-        />
-        <Text style={{ color: "#ff007f", letterSpacing: 2 }}>
-          END ANALYSIS SESSION
-        </Text>
+      {/* PAUSE + END BUTTONS */}
+      {isRunning && (
+        <View style={styles.row}>
+          <TouchableOpacity style={styles.pauseButton} onPress={onPause}>
+            <Text style={styles.pauseText}>
+              {isPaused ? "RESUME" : "PAUSE"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.stopButton} onPress={onStop}>
+            <Text style={styles.stopText}>END SESSION</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* REFRESH GPS BUTTON */}
+      <TouchableOpacity style={styles.refreshButton} onPress={onRefreshGPS}>
+        <Text style={styles.refreshText}>REFRESH GPS</Text>
       </TouchableOpacity>
+
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  bottomContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center", 
+  },
+
+  /* START BUTTON */
+  startButton: {
+    backgroundColor: "#32FF7E",
+    paddingVertical: 18,
+    borderRadius: 50,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  startText: {
+    color: "#000",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+
+  /* PAUSE + STOP */
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  pauseButton: {
+    flex: 1,
+    backgroundColor: "#FFD32A",
+    paddingVertical: 16,
+    borderRadius: 50,
+    marginRight: 8,
+    alignItems: "center",
+  },
+  pauseText: {
+    color: "#000",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  stopButton: {
+    flex: 1,
+    backgroundColor: "#FF3E3E",
+    paddingVertical: 16,
+    borderRadius: 50,
+    marginLeft: 8,
+    alignItems: "center",
+  },
+  stopText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+
+  /* REFRESH GPS */
+  refreshButton: {
+    backgroundColor: "#0da6f2",
+    paddingVertical: 14,
+    borderRadius: 50,
+    alignItems: "center",
+  },
+  refreshText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+});
