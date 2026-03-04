@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, ScrollView } from "react-native";
 
 import useSensors from "./Dashboard/useSensors";
+import { addLog } from "./Dashboard/storage";
 
 import Header from "./Dashboard/Header";
 import SessionTimer from "./Dashboard/SessionTimer";
@@ -20,27 +21,43 @@ export default function Dashboard() {
 
   const [frames, setFrames] = useState([]);
 
+  // تسجيل كل Frame
   const handleFrame = (currentTime) => {
-    if (isRunning && !isPaused) {
-      setFrames((prev) => [
-        ...prev,
-        {
+    try {
+      if (isRunning && !isPaused) {
+        const frame = {
           time: currentTime,
           accel,
           gyro,
-        },
-      ]);
+        };
+
+        setFrames((prev) => [...prev, frame]);
+
+        addLog("FRAME_RECORDED_" + currentTime);
+      }
+    } catch (err) {
+      addLog("FRAME_ERROR_" + err.message);
     }
   };
 
+  // عند إيقاف الجلسة
   const stopSession = () => {
-    setIsRunning(false);
-    setIsPaused(false);
-    setIsStopped(true);
+    try {
+      addLog("SESSION_STOP");
 
-    console.log("SESSION DATA:", frames);
+      setIsRunning(false);
+      setIsPaused(false);
+      setIsStopped(true);
 
-    setFrames([]);
+      addLog("SESSION_DATA_FRAMES=" + frames.length);
+
+      console.log("SESSION DATA:", frames);
+
+      setFrames([]);
+      addLog("FRAMES_CLEARED");
+    } catch (err) {
+      addLog("STOP_SESSION_ERROR_" + err.message);
+    }
   };
 
   return (
@@ -65,11 +82,13 @@ export default function Dashboard() {
 
       <BottomButtons
         onStart={() => {
+          addLog("SESSION_START");
           setIsRunning(true);
           setIsPaused(false);
           setIsStopped(false);
         }}
         onPause={() => {
+          addLog("SESSION_PAUSE");
           setIsPaused(true);
         }}
         onStop={stopSession}

@@ -1,60 +1,69 @@
 import { useState, useEffect } from "react";
-import { Platform } from "react-native";
+import { Accelerometer, Gyroscope } from "expo-sensors";
+import { addLog } from "./storage";
 
 export default function useSensors() {
   const [accel, setAccel] = useState({ x: 0, y: 0, z: 0 });
   const [gyro, setGyro] = useState({ x: 0, y: 0, z: 0 });
 
   useEffect(() => {
-    // -------------------------
-    // 📌 WEB VERSION
-    // -------------------------
-    if (Platform.OS === "web") {
-      const handleMotion = (event) => {
-        if (event.acceleration) {
-          setAccel({
-            x: event.acceleration.x || 0,
-            y: event.acceleration.y || 0,
-            z: event.acceleration.z || 0,
-          });
-        }
+    addLog("HOOK_MOUNTED");
 
-        if (event.rotationRate) {
-          setGyro({
-            x: event.rotationRate.alpha || 0,
-            y: event.rotationRate.beta || 0,
-            z: event.rotationRate.gamma || 0,
-          });
-        }
-      };
+    async function init() {
+      try {
+        addLog("INIT_START");
 
-      window.addEventListener("devicemotion", handleMotion);
+        // طلب الصلاحيات
+        addLog("REQUESTING_PERMISSIONS");
+        const accelPerm = await Accelerometer.requestPermissionsAsync();
+        const gyroPerm = await Gyroscope.requestPermissionsAsync();
+        addLog(`PERMISSIONS_RESULT accel=${accelPerm.status} gyro=${gyroPerm.status}`);
 
-      return () => {
-        window.removeEventListener("devicemotion", handleMotion);
-      };
+        // التحقق من توفر الحساسات
+        const accelAvailable = await Accelerometer.isAvailableAsync();
+        const gyroAvailable = await Gyroscope.isAvailableAsync();
+        addLog(`SENSORS_AVAILABLE accel=${accelAvailable} gyro=${gyroAvailable}`);
+
+        // إعداد التحديث
+        addLog("SETTING_UPDATE_INTERVAL");
+        Accelerometer.setUpdateInterval(100);
+        Gyroscope.setUpdateInterval(100);
+        addLog("UPDATE_INTERVAL_SET");
+
+        // إضافة Listeners
+        addLog("ADDING_LISTENERS");
+
+        const accelSub = Accelerometer.addListener((data) => {
+          setAccel(data);
+          addLog("ACCEL_EVENT_RECEIVED");
+        });
+
+        const gyroSub = Gyroscope.addListener((data) => {
+          setGyro(data);
+          addLog("GYRO_EVENT_RECEIVED");
+        });
+
+        addLog("LISTENERS_READY");
+
+        // Cleanup
+        return () => {
+          addLog("CLEANUP_START");
+          accelSub && accelSub.remove();
+          gyroSub && gyroSub.remove();
+          addLog("CLEANUP_DONE");
+        };
+
+      } catch (err) {
+        addLog("ERROR_" + err.message);
+      }
     }
 
-    // -------------------------
-    // 📌 MOBILE VERSION (Expo Sensors)
-    // -------------------------
-    async function loadMobileSensors() {
-      const { Accelerometer, Gyroscope } = await import("expo-sensors");
+    const cleanup = init();
 
-      Accelerometer.setUpdateInterval(100);
-      Gyroscope.setUpdateInterval(100);
-
-      const accelSub = Accelerometer.addListener((data) => setAccel(data));
-      const gyroSub = Gyroscope.addListener((data) => setGyro(data));
-
-      return () => {
-        accelSub && accelSub.remove();
-        gyroSub && gyroSub.remove();
-      };
-    }
-
-    const cleanup = loadMobileSensors();
-    return () => cleanup && cleanup();
+    return () => {
+      addLog("HOOK_UNMOUNT");
+      cleanup && cleanup();
+    };
   }, []);
 
   return { accel, gyro };
