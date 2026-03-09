@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Alert } from "react-native";
+import { View, Text, Alert, ScrollView, StyleSheet } from "react-native";
 import * as Location from "expo-location";
 
 import Header from "./Dashboard/Header";
@@ -18,17 +18,11 @@ export default function Dashboard({ navigation }) {
   const [isPaused, setIsPaused] = useState(false);
   const [frames, setFrames] = useState([]);
 
-  // GPS states
   const [currentLat, setCurrentLat] = useState(null);
   const [currentLon, setCurrentLon] = useState(null);
   const [currentSpeed, setCurrentSpeed] = useState(0);
-
-  // GPS status text
   const [gpsStatus, setGpsStatus] = useState("Searching...");
 
-  /* ---------------------------------------------
-     GPS STARTER + DETECT
-  ----------------------------------------------*/
   const startGPS = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
 
@@ -61,14 +55,10 @@ export default function Dashboard({ navigation }) {
     );
   };
 
-  // Run GPS on load
   useEffect(() => {
     startGPS();
   }, []);
 
-  /* ---------------------------------------------
-     FRAME RECORDING
-  ----------------------------------------------*/
   useEffect(() => {
     let interval = null;
 
@@ -95,9 +85,6 @@ export default function Dashboard({ navigation }) {
     return () => clearInterval(interval);
   }, [isRunning, isPaused, accel, gyro, currentLat, currentLon, currentSpeed]);
 
-  /* ---------------------------------------------
-     END SESSION
-  ----------------------------------------------*/
   const stopSession = () => {
     setIsRunning(false);
     setIsPaused(false);
@@ -113,57 +100,52 @@ export default function Dashboard({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0B0F14" }}>
-      <Header />
+      <ScrollView contentContainerStyle={{ paddingBottom: 200 }}>
+        <Header />
 
-      {/* GPS STATUS */}
-      <Text
-        style={{
-          color: gpsStatus === "GPS Active" ? "#32FF7E" : "#FF3E3E",
-          textAlign: "center",
-          marginBottom: 10,
-          fontSize: 12,
-        }}
-      >
-        {gpsStatus}
-      </Text>
+        <Text
+          style={{
+            color: gpsStatus === "GPS Active" ? "#32FF7E" : "#FF3E3E",
+            textAlign: "center",
+            marginBottom: 10,
+            fontSize: 12,
+          }}
+        >
+          {gpsStatus}
+        </Text>
 
-      <SessionTimer
-        isRunning={isRunning}
-        isPaused={isPaused}
-        onFrame={() => {}}
-      />
+        <SessionTimer isRunning={isRunning} isPaused={isPaused} onFrame={() => {}} />
 
-      <AccelerometerSection accel={accel} />
-      <GyroscopeSection gyro={gyro} />
-      <StatsSection />
+        <AccelerometerSection accel={accel} />
+        <GyroscopeSection gyro={gyro} />
+        <StatsSection />
+      </ScrollView>
 
       <BottomNav />
- 
-      <BottomButtons
-        isRunning={isRunning}
-        isPaused={isPaused}
-        onStart={() => setIsRunning(true)}
-        onPause={() => setIsPaused(!isPaused)}
-        onStop={() => {
-          setIsRunning(false);
-          setIsPaused(false);
-          setFrames([]);
-        }}
-        onRefreshGPS={startGPS} // زر الريفريش
-      />
+
+      {/* 🔥 الأزرار المثبتة */}
+      <View style={styles.fixedButtons}>
+        <BottomButtons
+          isRunning={isRunning}
+          isPaused={isPaused}
+          onStart={() => setIsRunning(true)}
+          onPause={() => setIsPaused(!isPaused)}
+          onStop={stopSession}
+          onRefreshGPS={startGPS}
+        />
+      </View>
     </View>
   );
-  //query style for bottom buttons and the dashboard
-  const styles = StyleSheet.create({
-    container: {
-      padding: 16,
-      paddingBottom: 30,
-    },
-    bottomContainer: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-  });
-
 }
+
+const styles = StyleSheet.create({
+  fixedButtons: {
+    position: "absolute",
+    bottom: 20,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+});
