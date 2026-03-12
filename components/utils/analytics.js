@@ -83,7 +83,7 @@ export function calculateStability(frames) {
   const variance = aTotals.reduce((a,b)=>a + (b-mean)**2, 0) / aTotals.length;
   const sigma = Math.sqrt(variance);
 
-  return 100 * Math.exp(-sigma / 1.2) || 0;
+  return 99 * Math.exp(-sigma / 1.2) || 0;
 }
 
 export function calculateSmoothness(frames, dt=0.02) {
@@ -100,7 +100,7 @@ export function calculateSmoothness(frames, dt=0.02) {
 
   const rms = Math.sqrt(jerks.reduce((a,b)=>a+b*b,0) / jerks.length);
 
-  return 100 * Math.exp(-rms / 1.5) || 0;
+  return 99 * Math.exp(-rms / 1.5) || 0;
 }
 
 export function calculateBalance(frames) {
@@ -143,7 +143,7 @@ export function calculateControl(frames) {
   }
 
   const r = num / Math.sqrt(denA * denG);
-  return 100 * Math.abs(r) || 0;
+  return 99 * Math.abs(r) || 0;
 }
 
 export function calculateMobility(frames, dt=0.02) {
@@ -173,5 +173,5 @@ export function calculateLoad(frames, dt=0.02) {
     load += aTotal**2 * dt;
   });
 
-  return 100 * (load / 500) || 0;
+  return 99 * (load / 500) || 0;
 }
