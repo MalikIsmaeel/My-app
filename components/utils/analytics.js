@@ -19,7 +19,7 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-/* ---------------- GPS ---------------- */
+/* ---------------- GPS ONLY ---------------- */
 
 export function calculateTotalDistance(frames) {
   if (!frames || frames.length < 2) return 0;
@@ -70,7 +70,7 @@ export function getInstantSpeed(frames) {
   return frames[frames.length - 1]?.gps?.speed || 0;
 }
 
-/* ---------------- Indicators ---------------- */
+/* ---------------- IMU ONLY ---------------- */
 
 export function calculateStability(frames) {
   if (!frames.length) return 0;
