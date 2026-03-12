@@ -26,9 +26,9 @@ export default function GyroscopeSection({ gyro }) {
           marginTop: 10,
         }}
       >
-        <AxisCard label="AXIS X" value={gyro.x} />
-        <AxisCard label="AXIS Y" value={gyro.y} />
-        <AxisCard label="AXIS Z" value={gyro.z} />
+        <AxisCard label="AXIS X" value={(gyro.x ).toFixed(2)} />
+        <AxisCard label="AXIS Y" value={(gyro.y ).toFixed(2)} />
+        <AxisCard label="AXIS Z" value={(gyro.z ).toFixed(2)} />
       </View>
     </View>
   );

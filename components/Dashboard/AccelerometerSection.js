@@ -26,9 +26,9 @@ export default function AccelerometerSection({ accel }) {
           marginTop: 10,
         }}
       >
-        <AxisCard label="AXIS X" value={accel.x} />
-        <AxisCard label="AXIS Y" value={accel.y} />
-        <AxisCard label="AXIS Z" value={accel.z} />
+        <AxisCard label="AXIS X" value={(accel.x).toFixed(2)} />
+        <AxisCard label="AXIS Y" value={(accel.y).toFixed(2)} />
+        <AxisCard label="AXIS Z" value={(accel.z).toFixed(2)} />
       </View>
     </View>
   );

@@ -117,7 +117,7 @@ export function calculateBalance(frames) {
   const sigmaRoll = std(rolls);
   const sigmaPitch = std(pitch);
 
-  return 100 * Math.exp(-(sigmaRoll + sigmaPitch) / 0.8) || 0;
+  return 99 * Math.exp(-(sigmaRoll + sigmaPitch) / 0.8) || 0;
 }
 
 export function calculateControl(frames) {
@@ -160,7 +160,7 @@ export function calculateMobility(frames, dt=0.02) {
 
   const avgV = velocities.reduce((a,b)=>a+b,0) / velocities.length;
 
-  return 100 * (avgV / 3) || 0;
+  return 99 * (avgV / 3) || 0;
 }
 
 export function calculateLoad(frames, dt=0.02) {
