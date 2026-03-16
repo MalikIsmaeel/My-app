@@ -16,44 +16,72 @@ function formatTime(totalSeconds) {
   );
 }
 
-export default function SessionTimer({ isRunning, isPaused, isStopped, onFrame }) {
+function haversine(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+
+  const R = 6371e3;
+  const toRad = (x) => (x * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+export default function SessionTimer({ isRunning, isPaused, gps }) {
   const [time, setTime] = useState(0);
+  const [steps, setSteps] = useState(0);
+  const [distance, setDistance] = useState(0);
+
+  const lastGPS = useRef(null);
   const intervalRef = useRef(null);
 
+  function isMoving(speed) {
+    return speed > 0.5;
+  }
+
   useEffect(() => {
-    // إيقاف أي interval شغال
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
 
-    // تشغيل التايمر
-    if (isRunning && !isPaused && !isStopped) {
+    if (isRunning && !isPaused) {
       intervalRef.current = setInterval(() => {
-        setTime((prev) => {
-          const newTime = prev + 0.1;
+        if (!gps || !gps.lat || !gps.lon) return;
 
-          // حماية من undefined
-          if (typeof onFrame === "function") {
-            onFrame(newTime);
+        if (!isMoving(gps.speed)) return;
+
+        setTime((prev) => prev + 0.1);
+
+        if (lastGPS.current) {
+          const dist = haversine(
+            lastGPS.current.lat,
+            lastGPS.current.lon,
+            gps.lat,
+            gps.lon
+          );
+
+          if (dist > 0.3) {
+            setDistance((d) => d + dist);
+            setSteps((s) => s + dist / 0.75);
           }
+        }
 
-          return newTime;
-        });
+        lastGPS.current = { lat: gps.lat, lon: gps.lon };
       }, 100);
     }
 
-    // عند الإيقاف
-    if (isStopped) {
-      setTime(0);
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isRunning, isPaused, isStopped]);
+    return () => clearInterval(intervalRef.current);
+  }, [isRunning, isPaused, gps]);
 
   return (
     <View
@@ -79,6 +107,14 @@ export default function SessionTimer({ isRunning, isPaused, isStopped, onFrame }
 
           <Text style={{ color: "white", fontSize: 28, fontWeight: "bold" }}>
             {formatTime(time)}
+          </Text>
+
+          <Text style={{ color: "#32FF7E", fontSize: 14, marginTop: 5 }}>
+            Steps: {Math.floor(steps)}
+          </Text>
+
+          <Text style={{ color: "#FFD32A", fontSize: 14, marginTop: 5 }}>
+            Distance: {distance.toFixed(1)} m
           </Text>
         </View>
       </View>

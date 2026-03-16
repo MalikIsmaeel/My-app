@@ -69,12 +69,12 @@ export default function SessionAnalysis() {
 
         {/* المؤشرات الستة */}
         <View style={styles.grid}>
-          <ScoreCard score={stability.toFixed(1)} label="Stability" color="#32FF7E" />
-          <ScoreCard score={balance.toFixed(1)} label="Balance" color="#0da6f2" />
-          <ScoreCard score={smoothness.toFixed(1)} label="Smoothness" color="#FFD32A" />
-          <ScoreCard score={control.toFixed(1)} label="Control" color="#FF9F1A" />
-          <ScoreCard score={mobility.toFixed(1)} label="Mobility" color="#FF3E3E" />
-          <ScoreCard score={load.toFixed(1)} label="Load" color="#32FF7E" />
+          <ScoreCard score={stability.toFixed(2)} label="Stability" color="#32FF7E" />
+          <ScoreCard score={balance.toFixed(2)} label="Balance" color="#0da6f2" />
+          <ScoreCard score={smoothness.toFixed(2)} label="Smoothness" color="#FFD32A" />
+          <ScoreCard score={control.toFixed(2)} label="Control" color="#FF9F1A" />
+          <ScoreCard score={mobility.toFixed(2)} label="Mobility" color="#FF3E3E" />
+          <ScoreCard score={load.toFixed(2)} label="Load" color="#32FF7E" />
         </View>
 
         <TouchableOpacity style={styles.button}>

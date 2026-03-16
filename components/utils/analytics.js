@@ -1,6 +1,6 @@
 /* ============================================================
-   ProAnalytics — Full Motion Analysis Engine
-   Using: Accelerometer + Linear Acceleration + Gyroscope
+   ProAnalytics — Full Motion Analysis Engine (IMU Only)
+   GPS is used only for movement detection in Dashboard
    ============================================================ */
 
 /* ---------------- TIME FORMAT ---------------- */
@@ -16,22 +16,6 @@ export function formatDuration(seconds) {
     ":" +
     String(secs).padStart(2, "0")
   );
-}
-
-/* ---------------- MOVEMENT DETECTION ---------------- */
-function isMoving(accel, speed) {
-  if (!accel) return false;
-
-  const a = Math.sqrt(accel.x**2 + accel.y**2 + accel.z**2);
-
-  if (speed > 0.3) return true;
-  if (Math.abs(a - 9.8) > 0.3) return true;
-
-  return false;
-}
-
-function filterMovingFrames(frames) {
-  return frames.filter(f => isMoving(f.accel, f.gps?.speed));
 }
 
 /* ---------------- WINDOWING ---------------- */
@@ -57,7 +41,7 @@ function createWindows(frames, windowSize = 1.0, step = 0.5) {
    ============================================================ */
 function calcMobility(window) {
   const la = window.map(f =>
-    Math.sqrt(f.linear.x**2 + f.linear.y**2 + f.linear.z**2)
+    Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2)
   );
 
   const avg = la.reduce((a,b)=>a+b,0) / la.length;
@@ -147,33 +131,10 @@ function calcLoad(window) {
 }
 
 /* ============================================================
-   STEPS
-   ============================================================ */
-function calcSteps(frames) {
-  let steps = 0;
-  let lastPeak = 0;
-
-  frames.forEach(f => {
-    const a = Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2);
-    const dynamic = Math.abs(a - 9.8);
-
-    if (dynamic > 1.2) {
-      if (f.time - lastPeak > 250) {
-        steps++;
-        lastPeak = f.time;
-      }
-    }
-  });
-
-  return steps;
-}
-
-/* ============================================================
    MAIN ENGINE
    ============================================================ */
 export function computeAnalytics(frames) {
-  const moving = filterMovingFrames(frames);
-  if (!moving.length) {
+  if (!frames || frames.length === 0) {
     return {
       windows: [],
       steps: 0,
@@ -182,7 +143,10 @@ export function computeAnalytics(frames) {
     };
   }
 
-  const windows = createWindows(moving);
+  // 🔥 Dashboard يسجل فقط أثناء الحركة
+  // لذلك لا نحتاج فلترة إضافية هنا
+
+  const windows = createWindows(frames);
 
   const results = windows.map(w => ({
     mobility: calcMobility(w),
@@ -193,10 +157,11 @@ export function computeAnalytics(frames) {
     load: calcLoad(w)
   }));
 
+  const duration = frames.length * 0.02;
+
   return {
     windows: results,
-    steps: calcSteps(moving),
-    duration: moving.length * 0.02,
-    durationFormatted: formatDuration(moving.length * 0.02)
+    duration,
+    durationFormatted: formatDuration(duration)
   };
 }

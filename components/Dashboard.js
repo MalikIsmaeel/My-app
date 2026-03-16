@@ -23,16 +23,9 @@ export default function Dashboard({ navigation }) {
   const [currentSpeed, setCurrentSpeed] = useState(0);
   const [gpsStatus, setGpsStatus] = useState("Searching...");
 
-  /* ---------------- MOVEMENT DETECTION ---------------- */
-  function isMoving(accel, speed) {
-    if (!accel) return false;
-
-    const a = Math.sqrt(accel.x**2 + accel.y**2 + accel.z**2);
-
-    if (speed > 0.3) return true;
-    if (Math.abs(a - 9.8) > 0.3) return true;
-
-    return false;
+  /* ---------------- MOVEMENT DETECTION (GPS ONLY) ---------------- */
+  function isMoving(speed) {
+    return speed > 0.5; // GPS-only movement detection
   }
 
   /* ---------------- GPS START ---------------- */
@@ -80,8 +73,8 @@ export default function Dashboard({ navigation }) {
       interval = setInterval(() => {
         if (!accel || !linear || !gyro || !currentLat || !currentLon) return;
 
-        // 🔥 لا تسجّل أي شيء إلا عند الحركة
-        if (!isMoving(accel, currentSpeed)) return;
+        // 🔥 لا تسجّل أي شيء إلا عند الحركة (GPS ONLY)
+        if (!isMoving(currentSpeed)) return;
 
         const now = Date.now();
         const dt =
@@ -140,10 +133,15 @@ export default function Dashboard({ navigation }) {
           {gpsStatus}
         </Text>
 
-        <SessionTimer isRunning={isRunning} isPaused={isPaused} />
+        {/* 🔥 SessionTimer الآن يعتمد فقط على GPS */}
+        <SessionTimer
+          isRunning={isRunning}
+          isPaused={isPaused}
+          gps={{ lat: currentLat, lon: currentLon, speed: currentSpeed }}
+        />
 
-        <AccelerometerSection accel={accel} linear={linear} />
-        <GyroscopeSection gyro={gyro} />
+        <AccelerometerSection accel={accel} speed={currentSpeed} />
+        <GyroscopeSection gyro={gyro} speed={currentSpeed} />
         <StatsSection />
       </ScrollView>
 

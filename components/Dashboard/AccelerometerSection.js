@@ -1,10 +1,17 @@
 import React from "react";
 import { View, Text } from "react-native";
 
-export default function AccelerometerSection({ accel }) {
+export default function AccelerometerSection({ accel, speed }) {
+  if (!accel) accel = { x: 0, y: 0, z: 0 };
+
+  const moving = speed > 0.5;
+
+  const ax = moving ? accel.x.toFixed(2) : "0.00";
+  const ay = moving ? accel.y.toFixed(2) : "0.00";
+  const az = moving ? accel.z.toFixed(2) : "0.00";
+
   return (
     <View style={{ marginTop: 25 }}>
-      {/* Title */}
       <View style={{ marginHorizontal: 20 }}>
         <Text style={{ color: "#0da6f2", fontSize: 12, letterSpacing: 2 }}>
           Accelerometer <Text style={{ color: "#aaa" }}>(m/s²)</Text>
@@ -18,7 +25,6 @@ export default function AccelerometerSection({ accel }) {
         />
       </View>
 
-      {/* Cards */}
       <View
         style={{
           flexDirection: "row",
@@ -26,15 +32,13 @@ export default function AccelerometerSection({ accel }) {
           marginTop: 10,
         }}
       >
-        <AxisCard label="AXIS X" value={(accel.x).toFixed(2)} />
-        <AxisCard label="AXIS Y" value={(accel.y).toFixed(2)} />
-        <AxisCard label="AXIS Z" value={(accel.z).toFixed(2)} />
+        <AxisCard label="AXIS X" value={ax} />
+        <AxisCard label="AXIS Y" value={ay} />
+        <AxisCard label="AXIS Z" value={az} />
       </View>
     </View>
   );
 }
-
-/* ----------- AXIS CARD COMPONENT ----------- */
 
 function AxisCard({ label, value }) {
   return (

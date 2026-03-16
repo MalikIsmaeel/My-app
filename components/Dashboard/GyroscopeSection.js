@@ -1,13 +1,20 @@
 import React from "react";
 import { View, Text } from "react-native";
 
-export default function GyroscopeSection({ gyro }) {
+export default function GyroscopeSection({ gyro, speed }) {
+  if (!gyro) gyro = { x: 0, y: 0, z: 0 };
+
+  const moving = speed > 0.5;
+
+  const gx = moving ? gyro.x.toFixed(2) : "0.00";
+  const gy = moving ? gyro.y.toFixed(2) : "0.00";
+  const gz = moving ? gyro.z.toFixed(2) : "0.00";
+
   return (
     <View style={{ marginTop: 25 }}>
-      {/* Title */}
       <View style={{ marginHorizontal: 20 }}>
-        <Text style={{ color: "#0da6f2", fontSize: 12, letterSpacing: 2 }}>
-          Gyroscope <Text style={{ color: "#aaa" }}>(deg/s)</Text>
+        <Text style={{ color: "#FFD32A", fontSize: 12, letterSpacing: 2 }}>
+          Gyroscope <Text style={{ color: "#aaa" }}>(rad/s)</Text>
         </Text>
         <View
           style={{
@@ -18,7 +25,6 @@ export default function GyroscopeSection({ gyro }) {
         />
       </View>
 
-      {/* Cards */}
       <View
         style={{
           flexDirection: "row",
@@ -26,15 +32,13 @@ export default function GyroscopeSection({ gyro }) {
           marginTop: 10,
         }}
       >
-        <AxisCard label="AXIS X" value={(gyro.x ).toFixed(2)} />
-        <AxisCard label="AXIS Y" value={(gyro.y ).toFixed(2)} />
-        <AxisCard label="AXIS Z" value={(gyro.z ).toFixed(2)} />
+        <AxisCard label="AXIS X" value={gx} />
+        <AxisCard label="AXIS Y" value={gy} />
+        <AxisCard label="AXIS Z" value={gz} />
       </View>
     </View>
   );
 }
-
-/* ----------- AXIS CARD COMPONENT ----------- */
 
 function AxisCard({ label, value }) {
   return (
