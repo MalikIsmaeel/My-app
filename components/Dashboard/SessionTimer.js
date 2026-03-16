@@ -1,36 +1,58 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
+function formatTime(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+
+  return (
+    String(hours).padStart(2, "0") +
+    ":" +
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(seconds).padStart(2, "0")
+  );
+}
+
 export default function SessionTimer({ isRunning, isPaused, isStopped, onFrame }) {
   const [time, setTime] = useState(0);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
-    let interval = null;
+    // إيقاف أي interval شغال
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
 
-    if (isRunning && !isPaused) {
-      interval = setInterval(() => {
+    // تشغيل التايمر
+    if (isRunning && !isPaused && !isStopped) {
+      intervalRef.current = setInterval(() => {
         setTime((prev) => {
           const newTime = prev + 0.1;
 
-          // منع conflict مع Dashboard
-          setTimeout(() => onFrame(newTime), 0);
+          // حماية من undefined
+          if (typeof onFrame === "function") {
+            onFrame(newTime);
+          }
 
           return newTime;
         });
       }, 100);
     }
 
-    if (isPaused) {
-      clearInterval(interval);
-    }
-
+    // عند الإيقاف
     if (isStopped) {
-      clearInterval(interval);
       setTime(0);
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [isRunning, isPaused, isStopped]);
 
   return (
@@ -56,7 +78,7 @@ export default function SessionTimer({ isRunning, isPaused, isStopped, onFrame }
           </Text>
 
           <Text style={{ color: "white", fontSize: 28, fontWeight: "bold" }}>
-            {time.toFixed(1)}s
+            {formatTime(time)}
           </Text>
         </View>
       </View>

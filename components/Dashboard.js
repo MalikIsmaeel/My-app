@@ -64,12 +64,19 @@ export default function Dashboard({ navigation }) {
 
     if (isRunning && !isPaused) {
       interval = setInterval(() => {
-        const time = Date.now();
+        if (!accel || !gyro || !currentLat || !currentLon) return;
+
+        const now = Date.now();
+        const dt =
+          frames.length > 0
+            ? (now - frames[frames.length - 1].time) / 1000
+            : 0.1;
 
         setFrames((prev) => [
           ...prev,
           {
-            time,
+            time: now,
+            dt,
             accel,
             gyro,
             gps: {
@@ -114,7 +121,7 @@ export default function Dashboard({ navigation }) {
           {gpsStatus}
         </Text>
 
-        <SessionTimer isRunning={isRunning} isPaused={isPaused} onFrame={() => {}} />
+        <SessionTimer isRunning={isRunning} isPaused={isPaused} />
 
         <AccelerometerSection accel={accel} />
         <GyroscopeSection gyro={gyro} />
@@ -123,12 +130,17 @@ export default function Dashboard({ navigation }) {
 
       <BottomNav />
 
-      {/* 🔥 الأزرار المثبتة */}
       <View style={styles.fixedButtons}>
         <BottomButtons
           isRunning={isRunning}
           isPaused={isPaused}
-          onStart={() => setIsRunning(true)}
+          onStart={() => {
+            if (!currentLat || !currentLon) {
+              Alert.alert("GPS", "Waiting for GPS signal...");
+              return;
+            }
+            setIsRunning(true);
+          }}
           onPause={() => setIsPaused(!isPaused)}
           onStop={stopSession}
           onRefreshGPS={startGPS}
