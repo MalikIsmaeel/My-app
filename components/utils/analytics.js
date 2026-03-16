@@ -1,177 +1,202 @@
-/* ---------------- Haversine ---------------- */
-function haversine(lat1, lon1, lat2, lon2) {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+/* ============================================================
+   ProAnalytics — Full Motion Analysis Engine
+   Using: Accelerometer + Linear Acceleration + Gyroscope
+   ============================================================ */
 
-  const R = 6371e3;
-  const toRad = (x) => (x * Math.PI) / 180;
+/* ---------------- TIME FORMAT ---------------- */
+export function formatDuration(seconds) {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
 
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) ** 2;
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c;
+  return (
+    String(hrs).padStart(2, "0") +
+    ":" +
+    String(mins).padStart(2, "0") +
+    ":" +
+    String(secs).padStart(2, "0")
+  );
 }
 
-/* ---------------- GPS ONLY ---------------- */
+/* ---------------- MOVEMENT DETECTION ---------------- */
+function isMoving(accel, speed) {
+  if (!accel) return false;
 
-export function calculateTotalDistance(frames) {
-  if (!frames || frames.length < 2) return 0;
+  const a = Math.sqrt(accel.x**2 + accel.y**2 + accel.z**2);
 
-  let total = 0;
-  for (let i = 1; i < frames.length; i++) {
-    const prev = frames[i - 1].gps;
-    const curr = frames[i].gps;
+  if (speed > 0.3) return true;
+  if (Math.abs(a - 9.8) > 0.3) return true;
 
-    if (!prev || !curr) continue;
-    if (!prev.lat || !curr.lat) continue;
+  return false;
+}
 
-    total += haversine(prev.lat, prev.lon, curr.lat, curr.lon);
+function filterMovingFrames(frames) {
+  return frames.filter(f => isMoving(f.accel, f.gps?.speed));
+}
+
+/* ---------------- WINDOWING ---------------- */
+function createWindows(frames, windowSize = 1.0, step = 0.5) {
+  const windows = [];
+  let start = frames[0].time;
+
+  while (true) {
+    const end = start + windowSize * 1000;
+    const w = frames.filter(f => f.time >= start && f.time < end);
+
+    if (w.length === 0) break;
+
+    windows.push(w);
+    start += step * 1000;
   }
-  return total || 0;
+
+  return windows;
 }
 
-export function calculateMovement(frames) {
-  if (!frames || frames.length < 2) return 0;
+/* ============================================================
+   1) MOBILITY
+   ============================================================ */
+function calcMobility(window) {
+  const la = window.map(f =>
+    Math.sqrt(f.linear.x**2 + f.linear.y**2 + f.linear.z**2)
+  );
 
-  const first = frames[0].gps;
-  const last = frames[frames.length - 1].gps;
-
-  if (!first || !last) return 0;
-  if (!first.lat || !last.lat) return 0;
-
-  return haversine(first.lat, first.lon, last.lat, last.lon) || 0;
+  const avg = la.reduce((a,b)=>a+b,0) / la.length;
+  return Math.min(100, (avg / 4) * 100);
 }
 
-export function calculateAverageSpeed(frames) {
-  if (!frames || !frames.length) return 0;
-
-  let sum = 0;
-  let count = 0;
-
-  frames.forEach((f) => {
-    if (f.gps?.speed !== null && f.gps?.speed !== undefined) {
-      sum += f.gps.speed;
-      count++;
-    }
-  });
-
-  return count ? sum / count : 0;
-}
-
-export function getInstantSpeed(frames) {
-  if (!frames || !frames.length) return 0;
-  return frames[frames.length - 1]?.gps?.speed || 0;
-}
-
-/* ---------------- IMU ONLY ---------------- */
-
-export function calculateStability(frames) {
-  if (!frames.length) return 0;
-
-  const aTotals = frames.map(f =>
+/* ============================================================
+   2) STABILITY
+   ============================================================ */
+function calcStability(window) {
+  const aTotals = window.map(f =>
     Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2)
   );
 
   const mean = aTotals.reduce((a,b)=>a+b,0) / aTotals.length;
-  const variance = aTotals.reduce((a,b)=>a + (b-mean)**2, 0) / aTotals.length;
+  const variance = aTotals.reduce((a,b)=>a+(b-mean)**2,0) / aTotals.length;
   const sigma = Math.sqrt(variance);
 
-  return 99 * Math.exp(-sigma / 1.2) || 0;
+  return Math.max(0, 100 * (1 - sigma / 3));
 }
 
-export function calculateSmoothness(frames, dt=0.02) {
-  if (frames.length < 2) return 0;
+/* ============================================================
+   3) BALANCE
+   ============================================================ */
+function calcBalance(window) {
+  const diffs = window.map(f =>
+    Math.abs(f.accel.x - f.accel.y) +
+    Math.abs(f.accel.y - f.accel.z) +
+    Math.abs(f.accel.z - f.accel.x)
+  );
 
-  const aTotals = frames.map(f =>
+  const avg = diffs.reduce((a,b)=>a+b,0) / diffs.length;
+  return Math.max(0, 100 * (1 - avg / 6));
+}
+
+/* ============================================================
+   4) SMOOTHNESS
+   ============================================================ */
+function calcSmoothness(window) {
+  const aTotals = window.map(f =>
     Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2)
   );
 
   const jerks = [];
   for (let i=1; i<aTotals.length; i++) {
+    const dt = (window[i].time - window[i-1].time) / 1000;
     jerks.push((aTotals[i] - aTotals[i-1]) / dt);
   }
 
-  const rms = Math.sqrt(jerks.reduce((a,b)=>a+b*b,0) / jerks.length);
-
-  return 99 * Math.exp(-rms / 1.5) || 0;
+  const avg = jerks.reduce((a,b)=>a+Math.abs(b),0) / jerks.length;
+  return Math.max(0, 100 * (1 - avg / 10));
 }
 
-export function calculateBalance(frames) {
-  if (!frames.length) return 0;
-
-  const rolls = frames.map(f => Math.atan(f.accel.y / f.accel.z));
-  const pitch = frames.map(f => Math.atan(-f.accel.x / Math.sqrt(f.accel.y**2 + f.accel.z**2)));
-
-  const std = arr => {
-    const m = arr.reduce((a,b)=>a+b,0) / arr.length;
-    return Math.sqrt(arr.reduce((a,b)=>a+(b-m)**2,0) / arr.length);
-  };
-
-  const sigmaRoll = std(rolls);
-  const sigmaPitch = std(pitch);
-
-  return 99 * Math.exp(-(sigmaRoll + sigmaPitch) / 0.8) || 0;
-}
-
-export function calculateControl(frames) {
-  if (!frames.length) return 0;
-
-  const aTotals = frames.map(f =>
-    Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2)
-  );
-
-  const gTotals = frames.map(f =>
+/* ============================================================
+   5) CONTROL
+   ============================================================ */
+function calcControl(window) {
+  const gTotals = window.map(f =>
     Math.sqrt(f.gyro.x**2 + f.gyro.y**2 + f.gyro.z**2)
   );
 
-  const meanA = aTotals.reduce((a,b)=>a+b,0) / aTotals.length;
-  const meanG = gTotals.reduce((a,b)=>a+b,0) / gTotals.length;
+  const mean = gTotals.reduce((a,b)=>a+b,0) / gTotals.length;
+  const variance = gTotals.reduce((a,b)=>a+(b-mean)**2,0) / gTotals.length;
+  const sigma = Math.sqrt(variance);
 
-  let num = 0, denA = 0, denG = 0;
-
-  for (let i=0; i<aTotals.length; i++) {
-    num += (aTotals[i] - meanA) * (gTotals[i] - meanG);
-    denA += (aTotals[i] - meanA)**2;
-    denG += (gTotals[i] - meanG)**2;
-  }
-
-  const r = num / Math.sqrt(denA * denG);
-  return 99 * Math.abs(r) || 0;
+  return Math.max(0, 100 * (1 - sigma / 5));
 }
 
-export function calculateMobility(frames, dt=0.02) {
-  if (!frames.length) return 0;
-
-  let v = 0;
-  const velocities = [];
-
-  frames.forEach(f => {
-    const aTotal = Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2);
-    v += aTotal * dt;
-    velocities.push(Math.abs(v));
-  });
-
-  const avgV = velocities.reduce((a,b)=>a+b,0) / velocities.length;
-
-  return 99 * (avgV / 3) || 0;
-}
-
-export function calculateLoad(frames, dt=0.02) {
-  if (!frames.length) return 0;
-
+/* ============================================================
+   6) LOAD
+   ============================================================ */
+function calcLoad(window) {
   let load = 0;
 
+  for (let i=1; i<window.length; i++) {
+    const a = Math.sqrt(
+      window[i].accel.x**2 +
+      window[i].accel.y**2 +
+      window[i].accel.z**2
+    );
+
+    const dt = (window[i].time - window[i-1].time) / 1000;
+    load += a * dt;
+  }
+
+  return Math.min(100, (load / 500) * 100);
+}
+
+/* ============================================================
+   STEPS
+   ============================================================ */
+function calcSteps(frames) {
+  let steps = 0;
+  let lastPeak = 0;
+
   frames.forEach(f => {
-    const aTotal = Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2);
-    load += aTotal**2 * dt;
+    const a = Math.sqrt(f.accel.x**2 + f.accel.y**2 + f.accel.z**2);
+    const dynamic = Math.abs(a - 9.8);
+
+    if (dynamic > 1.2) {
+      if (f.time - lastPeak > 250) {
+        steps++;
+        lastPeak = f.time;
+      }
+    }
   });
 
-  return 99 * (load / 500) || 0;
+  return steps;
+}
+
+/* ============================================================
+   MAIN ENGINE
+   ============================================================ */
+export function computeAnalytics(frames) {
+  const moving = filterMovingFrames(frames);
+  if (!moving.length) {
+    return {
+      windows: [],
+      steps: 0,
+      duration: 0,
+      durationFormatted: "00:00:00"
+    };
+  }
+
+  const windows = createWindows(moving);
+
+  const results = windows.map(w => ({
+    mobility: calcMobility(w),
+    stability: calcStability(w),
+    balance: calcBalance(w),
+    smoothness: calcSmoothness(w),
+    control: calcControl(w),
+    load: calcLoad(w)
+  }));
+
+  return {
+    windows: results,
+    steps: calcSteps(moving),
+    duration: moving.length * 0.02,
+    durationFormatted: formatDuration(moving.length * 0.02)
+  };
 }

@@ -3,18 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-nati
 import { useRoute } from "@react-navigation/native";
 import ScoreCard from "./ScoreCard";
 
-import {
-  calculateStability,
-  calculateSmoothness,
-  calculateBalance,
-  calculateControl,
-  calculateMobility,
-  calculateLoad,
-  calculateTotalDistance,
-  calculateAverageSpeed,
-  getInstantSpeed,
-  calculateMovement
-} from "./utils/analytics";
+import { computeAnalytics } from "./utils/analytics.js";
 
 export default function SessionAnalysis() {
   const route = useRoute();
@@ -30,19 +19,25 @@ export default function SessionAnalysis() {
 
   const frames = sessionData.frames || [];
 
-  const totalDistance = calculateTotalDistance(frames);
-  const avgSpeed = calculateAverageSpeed(frames);
-  const instantSpeed = getInstantSpeed(frames);
-  const movement = calculateMovement(frames);
+  // 🔥 حساب كل شيء من ProAnalytics
+  const analytics = computeAnalytics(frames);
 
-  const stabilityScore = calculateStability(frames);
-  const smoothnessScore = calculateSmoothness(frames);
-  const balanceScore = calculateBalance(frames);
-  const controlScore = calculateControl(frames);
-  const mobilityScore = calculateMobility(frames);
-  const loadScore = calculateLoad(frames);
+  const {
+    windows,
+    steps,
+    duration,
+    durationFormatted
+  } = analytics;
 
-  const durationMin = (sessionData.duration / 60).toFixed(1);
+  // آخر نافذة (آخر ثانية)
+  const lastWindow = windows.length > 0 ? windows[windows.length - 1] : null;
+
+  const stability = lastWindow?.stability || 0;
+  const balance = lastWindow?.balance || 0;
+  const smoothness = lastWindow?.smoothness || 0;
+  const control = lastWindow?.control || 0;
+  const mobility = lastWindow?.mobility || 0;
+  const load = lastWindow?.load || 0;
 
   return (
     <View style={styles.container}>
@@ -51,33 +46,35 @@ export default function SessionAnalysis() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Session Analysis</Text>
           <Text style={styles.headerSubtitle}>Last Session</Text>
-          <Text style={styles.headerSensor}>IMU6050 + GPS ACTIVE</Text>
+          <Text style={styles.headerSensor}>PHONE IMU + GPS ACTIVE</Text>
         </View>
 
+        {/* الزمن + النقاط + الخطوات */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Duration</Text>
-            <Text style={styles.statValue}>{durationMin} <Text style={styles.statUnit}>min</Text></Text>
+            <Text style={styles.statValue}>{durationFormatted}</Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Data Points</Text>
-            <Text style={styles.statValue}>{(sessionData.points / 1000).toFixed(1)}k</Text>
+            <Text style={styles.statValue}>{sessionData.points}</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Steps</Text>
+            <Text style={styles.statValue}>{steps}</Text>
           </View>
         </View>
 
+        {/* المؤشرات الستة */}
         <View style={styles.grid}>
-          <ScoreCard score={(stabilityScore || 0).toFixed(2)} label="Stability" color="#32FF7E" />
-          <ScoreCard score={(balanceScore || 0).toFixed(2)} label="Balance" color="#0da6f2" />
-          <ScoreCard score={(smoothnessScore || 0).toFixed(2)} label="Smoothness" color="#FFD32A" />
-          <ScoreCard score={(controlScore || 0).toFixed(2)} label="Control" color="#FF9F1A" />
-          <ScoreCard score={(mobilityScore || 0).toFixed(2)} label="Mobility" color="#FF3E3E" />
-          <ScoreCard score={(loadScore || 0).toFixed(2)} label="Load" color="#32FF7E" />
-
-          <ScoreCard score={(totalDistance || 0).toFixed(2)} label="Distance (m)" color="#0da6f2" />
-          <ScoreCard score={(avgSpeed || 0).toFixed(2)} label="Avg Speed" color="#FFD32A" />
-          <ScoreCard score={(instantSpeed || 0).toFixed(2)} label="Instant Speed" color="#FF9F1A" />
-          <ScoreCard score={(movement || 0).toFixed(2)} label="Movement (m)" color="#32FF7E" />
+          <ScoreCard score={stability.toFixed(1)} label="Stability" color="#32FF7E" />
+          <ScoreCard score={balance.toFixed(1)} label="Balance" color="#0da6f2" />
+          <ScoreCard score={smoothness.toFixed(1)} label="Smoothness" color="#FFD32A" />
+          <ScoreCard score={control.toFixed(1)} label="Control" color="#FF9F1A" />
+          <ScoreCard score={mobility.toFixed(1)} label="Mobility" color="#FF3E3E" />
+          <ScoreCard score={load.toFixed(1)} label="Load" color="#32FF7E" />
         </View>
 
         <TouchableOpacity style={styles.button}>
@@ -108,8 +105,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statLabel: { fontSize: 10, color: "#aaa" },
-  statValue: { fontSize: 22, color: "#fff", fontWeight: "700" },
-  statUnit: { fontSize: 12, color: "#0da6f2" },
+  statValue: { fontSize: 20, color: "#fff", fontWeight: "700" },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
   button: {
     marginTop: 20,

@@ -12,7 +12,7 @@ import BottomButtons from "./Dashboard/BottomButtons";
 import useSensors from "./Dashboard/useSensors";
 
 export default function Dashboard({ navigation }) {
-  const { accel, gyro } = useSensors();
+  const { accel, linear, gyro } = useSensors();
 
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -23,6 +23,19 @@ export default function Dashboard({ navigation }) {
   const [currentSpeed, setCurrentSpeed] = useState(0);
   const [gpsStatus, setGpsStatus] = useState("Searching...");
 
+  /* ---------------- MOVEMENT DETECTION ---------------- */
+  function isMoving(accel, speed) {
+    if (!accel) return false;
+
+    const a = Math.sqrt(accel.x**2 + accel.y**2 + accel.z**2);
+
+    if (speed > 0.3) return true;
+    if (Math.abs(a - 9.8) > 0.3) return true;
+
+    return false;
+  }
+
+  /* ---------------- GPS START ---------------- */
   const startGPS = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
 
@@ -37,7 +50,7 @@ export default function Dashboard({ navigation }) {
     Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
-        timeInterval: 500,
+        timeInterval: 300,
         distanceInterval: 0,
       },
       (loc) => {
@@ -59,18 +72,22 @@ export default function Dashboard({ navigation }) {
     startGPS();
   }, []);
 
+  /* ---------------- FRAME CAPTURE ---------------- */
   useEffect(() => {
     let interval = null;
 
     if (isRunning && !isPaused) {
       interval = setInterval(() => {
-        if (!accel || !gyro || !currentLat || !currentLon) return;
+        if (!accel || !linear || !gyro || !currentLat || !currentLon) return;
+
+        // 🔥 لا تسجّل أي شيء إلا عند الحركة
+        if (!isMoving(accel, currentSpeed)) return;
 
         const now = Date.now();
         const dt =
           frames.length > 0
             ? (now - frames[frames.length - 1].time) / 1000
-            : 0.1;
+            : 0.02;
 
         setFrames((prev) => [
           ...prev,
@@ -78,6 +95,7 @@ export default function Dashboard({ navigation }) {
             time: now,
             dt,
             accel,
+            linear,
             gyro,
             gps: {
               lat: currentLat,
@@ -86,18 +104,19 @@ export default function Dashboard({ navigation }) {
             },
           },
         ]);
-      }, 100);
+      }, 20); // 50Hz sampling
     }
 
     return () => clearInterval(interval);
-  }, [isRunning, isPaused, accel, gyro, currentLat, currentLon, currentSpeed]);
+  }, [isRunning, isPaused, accel, linear, gyro, currentLat, currentLon, currentSpeed]);
 
+  /* ---------------- STOP SESSION ---------------- */
   const stopSession = () => {
     setIsRunning(false);
     setIsPaused(false);
 
     const sessionData = {
-      duration: frames.length * 0.1,
+      duration: frames.length * 0.02,
       points: frames.length,
       frames,
     };
@@ -123,7 +142,7 @@ export default function Dashboard({ navigation }) {
 
         <SessionTimer isRunning={isRunning} isPaused={isPaused} />
 
-        <AccelerometerSection accel={accel} />
+        <AccelerometerSection accel={accel} linear={linear} />
         <GyroscopeSection gyro={gyro} />
         <StatsSection />
       </ScrollView>
