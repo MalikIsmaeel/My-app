@@ -35,7 +35,7 @@ cd android
 
 REM ====== RUN GRADLE BUILD ======
 gradlew assembleRelease
-
+pause
 REM ====== FIND GENERATED APK ======
 set APK_PATH=
 for /r "%PROJECT_DIR%\android\app\build\outputs\apk\release" %%f in (*.apk) do (

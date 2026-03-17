@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, Alert, ScrollView, StyleSheet } from "react-native";
-import * as Location from "expo-location";
 
 import Header from "./Dashboard/Header";
 import SessionTimer from "./Dashboard/SessionTimer";
@@ -10,98 +9,48 @@ import StatsSection from "./Dashboard/StatsSection";
 import BottomNav from "./Dashboard/BottomNav";
 import BottomButtons from "./Dashboard/BottomButtons";
 import useSensors from "./Dashboard/useSensors";
+import useGPS from "./Dashboard/UseGPS";
 
 export default function Dashboard({ navigation }) {
   const { accel, linear, gyro } = useSensors();
+  const { lat, lon, speed, accuracy, status, startGPS } = useGPS();
 
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [frames, setFrames] = useState([]);
 
-  const [currentLat, setCurrentLat] = useState(null);
-  const [currentLon, setCurrentLon] = useState(null);
-  const [currentSpeed, setCurrentSpeed] = useState(0);
-  const [gpsStatus, setGpsStatus] = useState("Searching...");
-
-  /* ---------------- MOVEMENT DETECTION (GPS ONLY) ---------------- */
   function isMoving(speed) {
-    return speed > 0.5; // GPS-only movement detection
+    return speed > 0.5;
   }
-
-  /* ---------------- GPS START ---------------- */
-  const startGPS = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-
-    if (status !== "granted") {
-      setGpsStatus("Permission Denied");
-      Alert.alert("GPS Permission", "Please enable GPS permission");
-      return;
-    }
-
-    setGpsStatus("Searching...");
-
-    Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 300,
-        distanceInterval: 0,
-      },
-      (loc) => {
-        if (!loc || !loc.coords) {
-          setGpsStatus("No Signal");
-          return;
-        }
-
-        setCurrentLat(loc.coords.latitude);
-        setCurrentLon(loc.coords.longitude);
-        setCurrentSpeed(loc.coords.speed || 0);
-
-        setGpsStatus("GPS Active");
-      }
-    );
-  };
-
-  useEffect(() => {
-    startGPS();
-  }, []);
 
   /* ---------------- FRAME CAPTURE ---------------- */
   useEffect(() => {
     let interval = null;
 
-    if (isRunning && !isPaused) {
+    if (isRunning && !isPaused && isMoving(speed)) {
       interval = setInterval(() => {
-        if (!accel || !linear || !gyro || !currentLat || !currentLon) return;
-
-        // 🔥 لا تسجّل أي شيء إلا عند الحركة (GPS ONLY)
-        if (!isMoving(currentSpeed)) return;
+        if (!accel || !linear || !gyro || !lat || !lon) return;
 
         const now = Date.now();
-        const dt =
-          frames.length > 0
-            ? (now - frames[frames.length - 1].time) / 1000
-            : 0.02;
+        const dt = frames.length > 0
+          ? (now - frames[frames.length - 1].time) / 1000
+          : 0.05;
 
-        setFrames((prev) => [
-          ...prev,
-          {
-            time: now,
-            dt,
-            accel,
-            linear,
-            gyro,
-            gps: {
-              lat: currentLat,
-              lon: currentLon,
-              speed: currentSpeed,
-            },
-          },
-        ]);
-      }, 20); // 50Hz sampling
+        const frame = {
+          time: now,
+          dt,
+          accel,
+          linear,
+          gyro,
+          gps: { lat, lon, speed, accuracy },
+        };
+
+        setFrames((prev) => [...prev.slice(-199), frame]);
+      }, 50);
     }
 
-    return () => clearInterval(interval);
-  }, [isRunning, isPaused, accel, linear, gyro, currentLat, currentLon, currentSpeed]);
+    return () => interval && clearInterval(interval);
+  }, [isRunning, isPaused, accel, linear, gyro, lat, lon, speed, accuracy]);
 
   /* ---------------- STOP SESSION ---------------- */
   const stopSession = () => {
@@ -109,9 +58,10 @@ export default function Dashboard({ navigation }) {
     setIsPaused(false);
 
     const sessionData = {
-      duration: frames.length * 0.02,
+      duration: frames.length * 0.05,
       points: frames.length,
       frames,
+      finalPosition: { lat, lon, speed },
     };
 
     navigation.navigate("SessionAnalysis", { sessionData });
@@ -124,24 +74,24 @@ export default function Dashboard({ navigation }) {
 
         <Text
           style={{
-            color: gpsStatus === "GPS Active" ? "#32FF7E" : "#FF3E3E",
+            color: status === "GPS Active" ? "#32FF7E" : "#FF3E3E",
             textAlign: "center",
             marginBottom: 10,
             fontSize: 12,
+            fontWeight: "bold",
           }}
         >
-          {gpsStatus}
+          {status}
         </Text>
 
-        {/* 🔥 SessionTimer الآن يعتمد فقط على GPS */}
         <SessionTimer
           isRunning={isRunning}
           isPaused={isPaused}
-          gps={{ lat: currentLat, lon: currentLon, speed: currentSpeed }}
+          gps={{ lat, lon, speed, accuracy }}
         />
 
-        <AccelerometerSection accel={accel} speed={currentSpeed} />
-        <GyroscopeSection gyro={gyro} speed={currentSpeed} />
+        <AccelerometerSection accel={accel} speed={speed} />
+        <GyroscopeSection gyro={gyro} speed={speed} />
         <StatsSection />
       </ScrollView>
 
@@ -152,7 +102,7 @@ export default function Dashboard({ navigation }) {
           isRunning={isRunning}
           isPaused={isPaused}
           onStart={() => {
-            if (!currentLat || !currentLon) {
+            if (!lat || !lon || status !== "GPS Active") {
               Alert.alert("GPS", "Waiting for GPS signal...");
               return;
             }
