@@ -111,6 +111,12 @@ export default function Dashboard({ navigation }) {
             setIsPaused(false);
           }}
           onPause={() => setIsPaused(p => !p)}
+          onReset={() => {
+            setIsRunning(false);
+            setIsPaused(false);
+            setFrames([]);
+            sessionStepsRef.current = 0;
+          }}
           onStop={stopSession}
           onRefreshGPS={startGPS}
         />
