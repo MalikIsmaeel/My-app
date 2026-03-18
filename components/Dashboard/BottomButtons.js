@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function BottomButtons({
   isRunning,
@@ -10,103 +11,97 @@ export default function BottomButtons({
   onRefreshGPS,
 }) {
   return (
-    <View style={styles.bottomContainer}>
+    <View style={styles.container}>
 
-      {/* START BUTTON */}
+      {/* ── قبل البدء ── */}
       {!isRunning && (
-        <TouchableOpacity style={styles.startButton} onPress={onStart}>
-          <Text style={styles.startText}>START SESSION</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* PAUSE + END BUTTONS */}
-      {isRunning && (
-        <View style={styles.row}>
-          <TouchableOpacity style={styles.pauseButton} onPress={onPause}>
-            <Text style={styles.pauseText}>
-              {isPaused ? "RESUME" : "PAUSE"}
-            </Text>
+        <>
+          <TouchableOpacity style={styles.startBtn} onPress={onStart}>
+            <MaterialIcons name="play-arrow" size={24} color="#000" />
+            <Text style={styles.startTxt}>START SESSION</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.stopButton} onPress={onStop}>
-            <Text style={styles.stopText}>END SESSION</Text>
+          <View style={{ height: 10 }} />
+
+          <TouchableOpacity style={styles.refreshBtn} onPress={onRefreshGPS}>
+            <MaterialIcons name="gps-fixed" size={18} color="#fff" />
+            <Text style={styles.refreshTxt}>REFRESH GPS</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {/* ── أثناء الجلسة ── */}
+      {isRunning && (
+        <View style={styles.row}>
+          <TouchableOpacity style={styles.pauseBtn} onPress={onPause}>
+            <MaterialIcons name={isPaused ? "play-arrow" : "pause"} size={22} color="#000" />
+            <Text style={styles.pauseTxt}>{isPaused ? "RESUME" : "PAUSE"}</Text>
+          </TouchableOpacity>
+
+          <View style={{ width: 10 }} />
+
+          <TouchableOpacity style={styles.stopBtn} onPress={onStop}>
+            <MaterialIcons name="stop" size={22} color="#fff" />
+            <Text style={styles.stopTxt}>END SESSION</Text>
           </TouchableOpacity>
         </View>
       )}
-
-      {/* REFRESH GPS BUTTON */}
-      <TouchableOpacity style={styles.refreshButton} onPress={onRefreshGPS}>
-        <Text style={styles.refreshText}>REFRESH GPS</Text>
-      </TouchableOpacity>
 
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bottomContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center", 
+  container: {
+    flexDirection: "column",
   },
-
-  /* START BUTTON */
-  startButton: {
-    backgroundColor: "#32FF7E",
-    paddingVertical: 18,
-    borderRadius: 50,
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  startText: {
-    color: "#000",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-
-  /* PAUSE + STOP */
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  pauseButton: {
-    flex: 1,
-    backgroundColor: "#FFD32A",
-    paddingVertical: 16,
-    borderRadius: 50,
-    marginRight: 8,
-    alignItems: "center",
-  },
-  pauseText: {
-    color: "#000",
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  stopButton: {
-    flex: 1,
-    backgroundColor: "#FF3E3E",
-    paddingVertical: 16,
-    borderRadius: 50,
-    marginLeft: 8,
-    alignItems: "center",
-  },
-  stopText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 15,
   },
 
-  /* REFRESH GPS */
-  refreshButton: {
+  /* START */
+  startBtn: {
+    flexDirection:   "row",
+    alignItems:      "center",
+    justifyContent:  "center",
+    backgroundColor: "#32FF7E",
+    paddingVertical: 18,
+    borderRadius:    50,
+  },
+  startTxt: { color: "#000", fontWeight: "700", fontSize: 16, marginLeft: 6 },
+
+  /* PAUSE */
+  pauseBtn: {
+    flex:            1,
+    flexDirection:   "row",
+    alignItems:      "center",
+    justifyContent:  "center",
+    backgroundColor: "#FFD32A",
+    paddingVertical: 16,
+    borderRadius:    50,
+  },
+  pauseTxt: { color: "#000", fontWeight: "700", fontSize: 15, marginLeft: 4 },
+
+  /* STOP */
+  stopBtn: {
+    flex:            1,
+    flexDirection:   "row",
+    alignItems:      "center",
+    justifyContent:  "center",
+    backgroundColor: "#FF3E3E",
+    paddingVertical: 16,
+    borderRadius:    50,
+  },
+  stopTxt: { color: "#fff", fontWeight: "700", fontSize: 15, marginLeft: 4 },
+
+  /* REFRESH */
+  refreshBtn: {
+    flexDirection:   "row",
+    alignItems:      "center",
+    justifyContent:  "center",
     backgroundColor: "#0da6f2",
-    paddingVertical: 14,
-    borderRadius: 50,
-    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius:    50,
   },
-  refreshText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 14,
-  },
+  refreshTxt: { color: "#fff", fontWeight: "700", fontSize: 14, marginLeft: 6 },
 });

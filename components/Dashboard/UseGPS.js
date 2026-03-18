@@ -1,116 +1,75 @@
+/**
+ * UseGPS.js
+ * ─────────────────────────────────────────────────────────────
+ * مصدر واحد لبيانات GPS في كامل التطبيق
+ * الإصلاحات:
+ *   ✅ استبدال stopLocationUpdatesAsync بـ subscription.remove()
+ *   ✅ حذف foregroundService (يحتاج إعداد app.json خاص)
+ *   ✅ تنظيف صحيح عند الخروج
+ * ─────────────────────────────────────────────────────────────
+ */
 import { useState, useEffect, useRef } from "react";
 import * as Location from "expo-location";
 
-/* ----------------------------------------------------
-   hook مخصص لإدارة GPS
-   - يطلب الإذن
-   - يبدأ التتبع
-   - يحدث الإحداثيات والسرعة والدقة
-   - يعيد الحالة للاستخدام في أي مكوّن
----------------------------------------------------- */
 export default function useGPS() {
+  const [lat,      setLat]      = useState(null);
+  const [lon,      setLon]      = useState(null);
+  const [speed,    setSpeed]    = useState(0);
+  const [accuracy, setAccuracy] = useState(null);
+  const [status,   setStatus]   = useState("Searching...");
 
-  /* ---------------- حالات GPS ---------------- */
-  const [lat, setLat] = useState(null);        // خط العرض
-  const [lon, setLon] = useState(null);        // خط الطول
-  const [speed, setSpeed] = useState(0);       // السرعة الحالية
-  const [accuracy, setAccuracy] = useState(null); // دقة GPS
-  const [status, setStatus] = useState("Searching..."); // حالة GPS
+  // ✅ نحفظ الـ subscription object (له .remove())
+  const subscriptionRef = useRef(null);
 
-  /* ---------------- معرف مراقبة GPS ---------------- */
-  const watchIdRef = useRef(null); // يخزن watchPositionAsync ID
-
-  /* ----------------------------------------------------
-     دالة بدء GPS
-     - تطلب الإذن
-     - تبدأ التتبع
-     - تحفظ watchId
-  ---------------------------------------------------- */
   const startGPS = async () => {
-
-    // إذا كان هناك تتبع سابق → أوقفه
-    if (watchIdRef.current) {
-      await Location.stopLocationUpdatesAsync(watchIdRef.current);
-      watchIdRef.current = null;
+    // إيقاف أي تتبع سابق
+    if (subscriptionRef.current) {
+      try { subscriptionRef.current.remove(); } catch (e) {}
+      subscriptionRef.current = null;
     }
 
-    // طلب إذن الوصول للموقع
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== "granted") {
-      setStatus("Permission Denied"); // تم رفض الإذن
+    const { status: perm } = await Location.requestForegroundPermissionsAsync();
+    if (perm !== "granted") {
+      setStatus("Permission Denied");
       return false;
     }
 
-    setStatus("Searching..."); // جاري البحث عن إشارة GPS
+    setStatus("Searching...");
 
     try {
-      // بدء مراقبة الموقع
-      const id = await Location.watchPositionAsync(
+      subscriptionRef.current = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High, // أعلى دقة
-          timeInterval: 1000,               // تحديث كل ثانية
-          distanceInterval: 5,              // تحديث بعد 5 متر حركة
-          deferredUpdatesInterval: 1000,
-          foregroundService: {
-            notificationTitle: "GPS Tracking",
-            notificationBody: "Tracking your movement",
-          },
+          accuracy:         Location.Accuracy.BestForNavigation,
+          timeInterval:     1000,
+          distanceInterval: 2,
         },
-
-        /* ----------------------------------------------------
-           عند وصول بيانات GPS جديدة
-        ---------------------------------------------------- */
         (loc) => {
-          if (!loc?.coords) {
-            setStatus("No Signal"); // لا توجد إشارة GPS
-            return;
-          }
+          if (!loc?.coords) { setStatus("No Signal"); return; }
 
-          // تحديث بيانات GPS
-          setLat(loc.coords.latitude);
-          setLon(loc.coords.longitude);
-          setSpeed(loc.coords.speed || 0);
-          setAccuracy(loc.coords.accuracy);
+          const { latitude, longitude, speed: spd, accuracy: acc } = loc.coords;
 
-          setStatus("GPS Active"); // GPS يعمل
+          setLat(latitude);
+          setLon(longitude);
+          setSpeed(spd || 0);
+          setAccuracy(acc);
+          setStatus("GPS Active");
         }
       );
-
-      // حفظ معرف التتبع
-      watchIdRef.current = id;
       return true;
-
-    } catch (error) {
-      setStatus("GPS Failed"); // فشل تشغيل GPS
+    } catch (e) {
+      setStatus("GPS Failed");
       return false;
     }
   };
 
-  /* ----------------------------------------------------
-     تشغيل GPS عند أول تحميل للمكوّن
-     وإيقافه عند الخروج
-  ---------------------------------------------------- */
   useEffect(() => {
-    startGPS(); // تشغيل GPS تلقائيًا
-
+    startGPS();
     return () => {
-      // تنظيف عند الخروج
-      if (watchIdRef.current) {
-        Location.stopLocationUpdatesAsync(watchIdRef.current);
+      if (subscriptionRef.current) {
+        try { subscriptionRef.current.remove(); } catch (e) {}
       }
     };
   }, []);
 
-  /* ----------------------------------------------------
-     القيم التي يعيدها hook
-     يمكن استخدامها في أي مكوّن
-  ---------------------------------------------------- */
-  return {
-    lat,
-    lon,
-    speed,
-    accuracy,
-    status,
-    startGPS, // لإعادة تشغيل GPS يدويًا
-  };
+  return { lat, lon, speed, accuracy, status, startGPS };
 }
