@@ -26,25 +26,42 @@ export default function SessionAnalysis() {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>No session data found</Text>
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 20, width: 200 }]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.buttonText}>← Back to Dashboard</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  const frames = sessionData.frames || [];
+  // ✅ FIX: تأكد دائماً إن frames مصفوفة وليست undefined
+  const frames = Array.isArray(sessionData.frames) ? sessionData.frames : [];
 
-  // ── مؤشرات الحركة ────────────────────────────
-  const stabilityScore  = calculateStability(frames);
-  const smoothnessScore = calculateSmoothness(frames);
-  const balanceScore    = calculateBalance(frames);
-  const controlScore    = calculateControl(frames);
-  const mobilityScore   = calculateMobility(frames);
-  const loadScore       = calculateLoad(frames);
+  // ── مؤشرات الحركة — محمية من الكراش ─────────
+  let stabilityScore  = 0;
+  let smoothnessScore = 0;
+  let balanceScore    = 0;
+  let controlScore    = 0;
+  let mobilityScore   = 0;
+  let loadScore       = 0;
+  let totalDistance   = 0;
+  let avgSpeed        = 0;
+  let instantSpeed    = 0;
+  let movement        = 0;
 
-  // ── مؤشرات GPS / مسافة ───────────────────────
-  const totalDistance = calculateTotalDistance(frames);
-  const avgSpeed      = calculateAverageSpeed(frames);
-  const instantSpeed  = getInstantSpeed(frames);
-  const movement      = calculateMovement(frames);
+  // ✅ FIX: لف الحسابات بـ try/catch — لو أي function فيها خطأ ما يكسر الشاشة
+  try { stabilityScore  = calculateStability(frames)  || 0; } catch (e) { console.warn("stability",  e); }
+  try { smoothnessScore = calculateSmoothness(frames) || 0; } catch (e) { console.warn("smoothness", e); }
+  try { balanceScore    = calculateBalance(frames)    || 0; } catch (e) { console.warn("balance",    e); }
+  try { controlScore    = calculateControl(frames)    || 0; } catch (e) { console.warn("control",    e); }
+  try { mobilityScore   = calculateMobility(frames)   || 0; } catch (e) { console.warn("mobility",   e); }
+  try { loadScore       = calculateLoad(frames)       || 0; } catch (e) { console.warn("load",       e); }
+  try { totalDistance   = calculateTotalDistance(frames) || 0; } catch (e) { console.warn("distance", e); }
+  try { avgSpeed        = calculateAverageSpeed(frames)  || 0; } catch (e) { console.warn("avgSpeed", e); }
+  try { instantSpeed    = getInstantSpeed(frames)        || 0; } catch (e) { console.warn("instantSpeed", e); }
+  try { movement        = calculateMovement(frames)      || 0; } catch (e) { console.warn("movement", e); }
 
   // ── وقت الجلسة ───────────────────────────────
   const duration =
@@ -89,8 +106,8 @@ export default function SessionAnalysis() {
             <Text style={styles.statLabel}>Points</Text>
             <Text style={styles.statValue}>
               {frames.length >= 1000
-                ? `${(sessionData.points / 1000).toFixed(1)}k`
-                : sessionData.points ?? 0}
+                ? `${(frames.length / 1000).toFixed(1)}k`
+                : frames.length}
             </Text>
           </View>
         </View>
@@ -98,12 +115,12 @@ export default function SessionAnalysis() {
         {/* Motion Score Cards */}
         <Text style={styles.sectionTitle}>Motion Analysis</Text>
         <View style={styles.grid}>
-          <ScoreCard score={(stabilityScore  || 0).toFixed(1)} label="Stability"  color="#32FF7E" />
-          <ScoreCard score={(balanceScore    || 0).toFixed(1)} label="Balance"    color="#0da6f2" />
-          <ScoreCard score={(smoothnessScore || 0).toFixed(1)} label="Smoothness" color="#FFD32A" />
-          <ScoreCard score={(controlScore    || 0).toFixed(1)} label="Control"    color="#FF9F1A" />
-          <ScoreCard score={(mobilityScore   || 0).toFixed(1)} label="Mobility"   color="#FF3E3E" />
-          <ScoreCard score={(loadScore       || 0).toFixed(1)} label="Load"       color="#32FF7E" />
+          <ScoreCard score={stabilityScore.toFixed(1)}  label="Stability"  color="#32FF7E" />
+          <ScoreCard score={balanceScore.toFixed(1)}    label="Balance"    color="#0da6f2" />
+          <ScoreCard score={smoothnessScore.toFixed(1)} label="Smoothness" color="#FFD32A" />
+          <ScoreCard score={controlScore.toFixed(1)}    label="Control"    color="#FF9F1A" />
+          <ScoreCard score={mobilityScore.toFixed(1)}   label="Mobility"   color="#FF3E3E" />
+          <ScoreCard score={loadScore.toFixed(1)}       label="Load"       color="#32FF7E" />
         </View>
 
         {/* GPS / Movement Cards */}
