@@ -3,19 +3,73 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-nati
 import { useRoute, useNavigation } from "@react-navigation/native";
 import ScoreCard from "./ScoreCard";
 
-import {
-  calculateStability,
-  calculateSmoothness,
-  calculateBalance,
-  calculateControl,
-  calculateMobility,
-  calculateLoad,
-  calculateTotalDistance,
-  calculateAverageSpeed,
-  getInstantSpeed,
-  calculateMovement,
-  formatDuration,
-} from "./utils/analytics";
+import { computeAnalytics } from "./utils/analytics";
+
+// ── helper: متوسط قيمة معينة عبر كل الـ windows ─────
+function avg(windows, key) {
+  if (!windows || windows.length === 0) return 0;
+  const sum = windows.reduce((a, w) => a + (w[key] || 0), 0);
+  return sum / windows.length;
+}
+
+// ── GPS helpers ──────────────────────────────────────
+function toRad(deg) { return deg * Math.PI / 180; }
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R  = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat/2)**2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function calcTotalDistance(frames) {
+  let dist = 0;
+  for (let i = 1; i < frames.length; i++) {
+    const a = frames[i-1].gps;
+    const b = frames[i].gps;
+    if (a?.lat && a?.lon && b?.lat && b?.lon &&
+        a.lat !== b.lat && a.lon !== b.lon) {
+      dist += haversine(a.lat, a.lon, b.lat, b.lon);
+    }
+  }
+  return dist;
+}
+
+function calcAvgSpeed(frames) {
+  const speeds = frames
+    .map(f => f.gps?.speed)
+    .filter(s => s != null && s >= 0);
+  if (speeds.length === 0) return 0;
+  return (speeds.reduce((a,b) => a+b, 0) / speeds.length) * 3.6;
+}
+
+function calcInstantSpeed(frames) {
+  for (let i = frames.length - 1; i >= 0; i--) {
+    const s = frames[i].gps?.speed;
+    if (s != null && s >= 0) return s * 3.6;
+  }
+  return 0;
+}
+
+function calcMovement(frames) {
+  let total = 0;
+  for (let i = 1; i < frames.length; i++) {
+    const f  = frames[i];
+    const dt = (f.time - frames[i-1].time) / 1000 || 0.05;
+    const mag = Math.sqrt(
+      (f.linear?.x || 0)**2 +
+      (f.linear?.y || 0)**2 +
+      (f.linear?.z || 0)**2
+    );
+    total += mag * dt;
+  }
+  return total;
+}
+
+/* ════════════════════════════════════════════════════ */
 
 export default function SessionAnalysis() {
   const route       = useRoute();
@@ -36,41 +90,28 @@ export default function SessionAnalysis() {
     );
   }
 
-  // ✅ FIX: تأكد دائماً إن frames مصفوفة وليست undefined
   const frames = Array.isArray(sessionData.frames) ? sessionData.frames : [];
 
-  // ── مؤشرات الحركة — محمية من الكراش ─────────
-  let stabilityScore  = 0;
-  let smoothnessScore = 0;
-  let balanceScore    = 0;
-  let controlScore    = 0;
-  let mobilityScore   = 0;
-  let loadScore       = 0;
-  let totalDistance   = 0;
-  let avgSpeed        = 0;
-  let instantSpeed    = 0;
-  let movement        = 0;
+  // ✅ الاستدعاء الصحيح — دالة واحدة تُرجع كل شيء
+  const analytics = computeAnalytics(frames, sessionData.steps || 0);
+  const windows   = analytics.windows || [];
 
-  // ✅ FIX: لف الحسابات بـ try/catch — لو أي function فيها خطأ ما يكسر الشاشة
-  try { stabilityScore  = calculateStability(frames)  || 0; } catch (e) { console.warn("stability",  e); }
-  try { smoothnessScore = calculateSmoothness(frames) || 0; } catch (e) { console.warn("smoothness", e); }
-  try { balanceScore    = calculateBalance(frames)    || 0; } catch (e) { console.warn("balance",    e); }
-  try { controlScore    = calculateControl(frames)    || 0; } catch (e) { console.warn("control",    e); }
-  try { mobilityScore   = calculateMobility(frames)   || 0; } catch (e) { console.warn("mobility",   e); }
-  try { loadScore       = calculateLoad(frames)       || 0; } catch (e) { console.warn("load",       e); }
-  try { totalDistance   = calculateTotalDistance(frames) || 0; } catch (e) { console.warn("distance", e); }
-  try { avgSpeed        = calculateAverageSpeed(frames)  || 0; } catch (e) { console.warn("avgSpeed", e); }
-  try { instantSpeed    = getInstantSpeed(frames)        || 0; } catch (e) { console.warn("instantSpeed", e); }
-  try { movement        = calculateMovement(frames)      || 0; } catch (e) { console.warn("movement", e); }
+  // ── متوسطات المؤشرات من الـ windows ──────────
+  const stabilityScore  = avg(windows, "stability");
+  const smoothnessScore = avg(windows, "smoothness");
+  const balanceScore    = avg(windows, "balance");
+  const controlScore    = avg(windows, "control");
+  const mobilityScore   = avg(windows, "mobility");
+  const loadScore       = avg(windows, "load");
 
-  // ── وقت الجلسة ───────────────────────────────
-  const duration =
-    frames.length >= 2
-      ? (frames[frames.length - 1].time - frames[0].time) / 1000
-      : sessionData.duration || 0;
+  // ── GPS / حركة ───────────────────────────────
+  const totalDistance = calcTotalDistance(frames);
+  const avgSpeedVal   = calcAvgSpeed(frames);
+  const instantSpeed  = calcInstantSpeed(frames);
+  const movement      = calcMovement(frames);
 
-  const durationFmt = formatDuration(duration);
-  const steps       = sessionData.steps || 0;
+  const durationFmt = analytics.durationFormatted || "00:00:00";
+  const steps       = analytics.steps || 0;
 
   return (
     <View style={styles.container}>
@@ -134,7 +175,7 @@ export default function SessionAnalysis() {
             color="#0da6f2"
           />
           <ScoreCard
-            score={`${avgSpeed.toFixed(1)} km/h`}
+            score={`${avgSpeedVal.toFixed(1)} km/h`}
             label="Avg Speed"
             color="#FFD32A"
           />
