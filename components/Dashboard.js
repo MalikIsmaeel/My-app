@@ -20,10 +20,12 @@ export default function Dashboard({ navigation }) {
   const [isPaused,   setIsPaused]   = useState(false);
   const [frames,     setFrames]     = useState([]);
   const [isMoving,   setIsMoving]   = useState(false);
-  const [isLoading,  setIsLoading]  = useState(false);  // ✅ loading state
+  const [isLoading,  setIsLoading]  = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("Processing session...");
 
-  const sessionStepsRef = useRef(0);
+  // ✅ FIX 1: framesRef يحمل دائماً آخر نسخة من frames
+  const framesRef        = useRef([]);
+  const sessionStepsRef  = useRef(0);
 
   // ── كشف الحركة ────────────────────────────────
   useEffect(() => {
@@ -39,49 +41,67 @@ export default function Dashboard({ navigation }) {
       interval = setInterval(() => {
         if (!accel || !gyro) return;
         const now = Date.now();
-        const dt  = frames.length > 0
-          ? (now - frames[frames.length - 1].time) / 1000
-          : 0.05;
-        setFrames(prev => [...prev.slice(-499), {
-          time: now, dt,
-          accel:  accel  || { x:0, y:0, z:0 },
-          linear: linear || { x:0, y:0, z:0 },
-          gyro:   gyro   || { x:0, y:0, z:0 },
-          gps: { lat, lon, speed, accuracy },
-        }]);
+
+        setFrames(prev => {
+          const dt = prev.length > 0
+            ? (now - prev[prev.length - 1].time) / 1000
+            : 0.05;
+
+          const newFrame = {
+            time: now, dt,
+            accel:  accel  || { x:0, y:0, z:0 },
+            linear: linear || { x:0, y:0, z:0 },
+            gyro:   gyro   || { x:0, y:0, z:0 },
+            gps: { lat, lon, speed, accuracy },
+          };
+
+          // ✅ FIX 2: حدّث الـ ref مع كل frame
+          const updated = [...prev.slice(-499), newFrame];
+          framesRef.current = updated;
+          return updated;
+        });
       }, 50);
     }
     return () => interval && clearInterval(interval);
   }, [isRunning, isPaused, accel, linear, gyro, lat, lon, speed, accuracy]);
 
-  // ── STOP SESSION — مع loading ─────────────────
+  // ── STOP SESSION ─────────────────────────────
   const stopSession = () => {
     // 1) أوقف التسجيل فوراً
     setIsRunning(false);
     setIsPaused(false);
 
+    // ✅ FIX 3: اقرأ الـ frames من الـ ref مباشرةً — لا stale closure
+    const capturedFrames = [...framesRef.current];
+    const capturedSteps  = sessionStepsRef.current;
+
     // 2) أظهر شاشة Loading
     setLoadingMsg("Saving session data...");
     setIsLoading(true);
 
-    // 3) أعطِ الـ UI فرصة يرسم الـ loading (2 frames)
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        // 4) حوّل البيانات بعد 800ms (يكفي لإظهار الـ loading)
         setTimeout(() => {
           setLoadingMsg("Computing analytics...");
 
           setTimeout(() => {
+            // ✅ FIX 4: تأكد من وجود البيانات قبل التنقل
             const sessionData = {
-              duration:      frames.length * 0.05,
-              points:        frames.length,
-              steps:         sessionStepsRef.current,
-              frames,
+              duration:      capturedFrames.length > 0
+                ? (capturedFrames[capturedFrames.length - 1].time - capturedFrames[0].time) / 1000
+                : 0,
+              points:        capturedFrames.length,
+              steps:         capturedSteps,
+              frames:        capturedFrames,
               finalPosition: { lat, lon, speed },
             };
 
             setIsLoading(false);
-            navigation.navigate("SessionAnalysis", { sessionData });
+
+            // ✅ FIX 5: تأخير صغير بعد إخفاء الـ loading قبل التنقل
+            setTimeout(() => {
+              navigation.navigate("SessionAnalysis", { sessionData });
+            }, 100);
           }, 600);
         }, 400);
       });
@@ -93,6 +113,7 @@ export default function Dashboard({ navigation }) {
     setIsRunning(false);
     setIsPaused(false);
     setFrames([]);
+    framesRef.current = [];
     sessionStepsRef.current = 0;
   };
 
@@ -137,6 +158,7 @@ export default function Dashboard({ navigation }) {
           isPaused={isPaused}
           onStart={() => {
             setFrames([]);
+            framesRef.current = [];
             sessionStepsRef.current = 0;
             setIsRunning(true);
             setIsPaused(false);
@@ -148,7 +170,6 @@ export default function Dashboard({ navigation }) {
         />
       </View>
 
-      {/* ✅ Loading Overlay فوق كل شيء */}
       <LoadingOverlay visible={isLoading} message={loadingMsg} />
 
     </View>
