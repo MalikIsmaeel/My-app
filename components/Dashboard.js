@@ -9,12 +9,34 @@ import StatsSection         from "./Dashboard/StatsSection";
 import BottomNav            from "./Dashboard/BottomNav";
 import BottomButtons        from "./Dashboard/BottomButtons";
 import LoadingOverlay       from "./Dashboard/LoadingOverlay";
+
 import useSensors           from "./Dashboard/useSensors";
 import useGPS               from "./Dashboard/UseGPS";
+import useExternalMotionLink from "./Dashboard/useExternalMotionLink";
 
 export default function Dashboard({ navigation }) {
+
+  // حساسات الجهاز
   const { accel, linear, gyro } = useSensors();
+
+  // GPS
   const { lat, lon, speed, accuracy, status, startGPS } = useGPS();
+
+  // الحركة من API + WebSocket
+  const {
+    extAccel,
+    extGyro,
+    apiOnline,
+    wsOnline,
+    isOnline
+  } = useExternalMotionLink(
+    "http://192.168.1.50:5000/motion",   // ← API عبر الواي فاي
+    "ws://192.168.1.50:5000/ws"         // ← WebSocket fallback
+  );
+
+  // اختيار المصدر النهائي
+  const finalAccel = extAccel || accel;
+  const finalGyro  = extGyro  || gyro;
 
   const [isRunning,  setIsRunning]  = useState(false);
   const [isPaused,   setIsPaused]   = useState(false);
@@ -23,23 +45,28 @@ export default function Dashboard({ navigation }) {
   const [isLoading,  setIsLoading]  = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("Processing session...");
 
-  // ✅ FIX 1: framesRef يحمل دائماً آخر نسخة من frames
   const framesRef        = useRef([]);
   const sessionStepsRef  = useRef(0);
 
-  // ── كشف الحركة ────────────────────────────────
+  // ── كشف الحركة من المصدر الخارجي أو الداخلي ───────────────────────────────
+  const motionSource = extAccel || linear;
+
   useEffect(() => {
-    if (!linear) return;
-    const mag = Math.sqrt(linear.x**2 + linear.y**2 + linear.z**2);
+    if (!motionSource) return;
+    const mag = Math.sqrt(
+      motionSource.x**2 +
+      motionSource.y**2 +
+      motionSource.z**2
+    );
     setIsMoving(mag > 0.12);
-  }, [linear]);
+  }, [motionSource]);
 
   // ── FRAME CAPTURE ─────────────────────────────
   useEffect(() => {
     let interval = null;
     if (isRunning && !isPaused) {
       interval = setInterval(() => {
-        if (!accel || !gyro) return;
+        if (!finalAccel || !finalGyro) return;
         const now = Date.now();
 
         setFrames(prev => {
@@ -49,13 +76,13 @@ export default function Dashboard({ navigation }) {
 
           const newFrame = {
             time: now, dt,
-            accel:  accel  || { x:0, y:0, z:0 },
-            linear: linear || { x:0, y:0, z:0 },
-            gyro:   gyro   || { x:0, y:0, z:0 },
+            accel:  finalAccel || { x:0, y:0, z:0 },
+            linear: linear     || { x:0, y:0, z:0 },
+            gyro:   finalGyro  || { x:0, y:0, z:0 },
             gps: { lat, lon, speed, accuracy },
+            source: apiOnline ? "API" : wsOnline ? "WebSocket" : "Device"
           };
 
-          // ✅ FIX 2: حدّث الـ ref مع كل frame
           const updated = [...prev.slice(-499), newFrame];
           framesRef.current = updated;
           return updated;
@@ -63,19 +90,16 @@ export default function Dashboard({ navigation }) {
       }, 50);
     }
     return () => interval && clearInterval(interval);
-  }, [isRunning, isPaused, accel, linear, gyro, lat, lon, speed, accuracy]);
+  }, [isRunning, isPaused, finalAccel, finalGyro, linear, lat, lon, speed, accuracy, apiOnline, wsOnline]);
 
   // ── STOP SESSION ─────────────────────────────
   const stopSession = () => {
-    // 1) أوقف التسجيل فوراً
     setIsRunning(false);
     setIsPaused(false);
 
-    // ✅ FIX 3: اقرأ الـ frames من الـ ref مباشرةً — لا stale closure
     const capturedFrames = [...framesRef.current];
     const capturedSteps  = sessionStepsRef.current;
 
-    // 2) أظهر شاشة Loading
     setLoadingMsg("Saving session data...");
     setIsLoading(true);
 
@@ -85,20 +109,18 @@ export default function Dashboard({ navigation }) {
           setLoadingMsg("Computing analytics...");
 
           setTimeout(() => {
-            // ✅ FIX 4: تأكد من وجود البيانات قبل التنقل
             const sessionData = {
-              duration:      capturedFrames.length > 0
+              duration: capturedFrames.length > 0
                 ? (capturedFrames[capturedFrames.length - 1].time - capturedFrames[0].time) / 1000
                 : 0,
-              points:        capturedFrames.length,
-              steps:         capturedSteps,
-              frames:        capturedFrames,
+              points: capturedFrames.length,
+              steps:  capturedSteps,
+              frames: capturedFrames,
               finalPosition: { lat, lon, speed },
             };
 
             setIsLoading(false);
 
-            // ✅ FIX 5: تأخير صغير بعد إخفاء الـ loading قبل التنقل
             setTimeout(() => {
               navigation.navigate("SessionAnalysis", { sessionData });
             }, 100);
@@ -108,7 +130,6 @@ export default function Dashboard({ navigation }) {
     });
   };
 
-  // ── RESET ─────────────────────────────────────
   const resetSession = () => {
     setIsRunning(false);
     setIsPaused(false);
@@ -131,6 +152,18 @@ export default function Dashboard({ navigation }) {
           {status}{accuracy ? `  •  ${accuracy.toFixed(0)}م` : ""}
         </Text>
 
+        {apiOnline && (
+          <Text style={{ textAlign:"center", color:"#32FF7E", fontSize:12 }}>
+            API Motion Source Active
+          </Text>
+        )}
+
+        {!apiOnline && wsOnline && (
+          <Text style={{ textAlign:"center", color:"#FFD32A", fontSize:12 }}>
+            WebSocket Motion Source Active
+          </Text>
+        )}
+
         {isRunning && (
           <Text style={styles.frameCount}>
             ● {frames.length} frames recorded
@@ -141,13 +174,13 @@ export default function Dashboard({ navigation }) {
           isRunning={isRunning}
           isPaused={isPaused}
           gps={gpsData}
-          linear={linear}
+          linear={motionSource}
           onStepsUpdate={s => { sessionStepsRef.current = s; }}
         />
 
-        <AccelerometerSection accel={accel} isMoving={isMoving} />
-        <GyroscopeSection     gyro={gyro}   isMoving={isMoving} />
-        <StatsSection accel={accel} gyro={gyro} isMoving={isMoving} />
+        <AccelerometerSection accel={finalAccel} isMoving={isMoving} />
+        <GyroscopeSection     gyro={finalGyro}   isMoving={isMoving} />
+        <StatsSection accel={finalAccel} gyro={finalGyro} isMoving={isMoving} />
       </ScrollView>
 
       <BottomNav />
@@ -187,13 +220,13 @@ const styles = StyleSheet.create({
     fontSize: 11, marginBottom: 6,
   },
   fixedButtons: {
-    position:        "absolute",
-    bottom:          0, left: 0, right: 0,
+    position: "absolute",
+    bottom: 0, left: 0, right: 0,
     paddingHorizontal: 20,
-    paddingTop:      12,
-    paddingBottom:   Platform.OS === "ios" ? 30 : 16,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 30 : 16,
     backgroundColor: "rgba(11,15,20,0.95)",
-    borderTopWidth:  1,
-    borderTopColor:  "rgba(255,255,255,0.08)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
   },
 });
