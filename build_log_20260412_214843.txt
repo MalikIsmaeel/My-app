@@ -1,0 +1,9 @@
+[21:48:43.66] BUILD STARTED - Sun 04/12/2026 21:48:43.66 
+[21:48:43.67] PROJECT_DIR: D:\My-app 
+[21:48:43.69] STEP 1: Check Java 
+[21:48:43.97]   java -version output: openjdk version "17.0.2" 2022-01-18 
+[21:48:44.09]   Java major version: 17 
+[21:48:44.13] PASS: Java 17 (32-bit) 
+[21:48:44.14] STEP 2: Check OS 
+[21:48:44.16]   Windows: Version 10.0.19045.6456 
+[21:48:44.20] FAIL: Java 17 32-bit + Gradle 8 incompatible 
