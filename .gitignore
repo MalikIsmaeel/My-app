@@ -30,3 +30,23 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Large files and installers
+*.msi
+*.exe
+*.dmg
+*.apk
+*.aab
+*.jar
+*.war
+*.zip
+*.tar.gz
+*.7z
+*.rar
+
+# Build artifacts and caches
+*.class
+*.jar
+dist/
+out/
+target/
