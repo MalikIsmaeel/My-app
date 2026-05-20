@@ -1,75 +1,56 @@
-/**
- * UseGPS.js
- * ─────────────────────────────────────────────────────────────
- * مصدر واحد لبيانات GPS في كامل التطبيق
- * الإصلاحات:
- *   ✅ استبدال stopLocationUpdatesAsync بـ subscription.remove()
- *   ✅ حذف foregroundService (يحتاج إعداد app.json خاص)
- *   ✅ تنظيف صحيح عند الخروج
- * ─────────────────────────────────────────────────────────────
- */
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import * as Location from "expo-location";
 
 export default function useGPS() {
   const [lat,      setLat]      = useState(null);
   const [lon,      setLon]      = useState(null);
-  const [speed,    setSpeed]    = useState(0);
+  const [speed,    setSpeed]    = useState(null);
   const [accuracy, setAccuracy] = useState(null);
-  const [status,   setStatus]   = useState("Searching...");
+  const [status,   setStatus]   = useState("GPS Inactive");
 
-  // ✅ نحفظ الـ subscription object (له .remove())
-  const subscriptionRef = useRef(null);
+  const watchRef = useRef(null);
 
+  // ── تشغيل GPS ─────────────────────────────────────
   const startGPS = async () => {
-    // إيقاف أي تتبع سابق
-    if (subscriptionRef.current) {
-      try { subscriptionRef.current.remove(); } catch (e) {}
-      subscriptionRef.current = null;
+    // إذا في watch شغّال، وقّفه أولاً
+    if (watchRef.current) {
+      watchRef.current.remove();
+      watchRef.current = null;
     }
 
     const { status: perm } = await Location.requestForegroundPermissionsAsync();
     if (perm !== "granted") {
-      setStatus("Permission Denied");
-      return false;
+      setStatus("GPS Denied");
+      return;
     }
 
-    setStatus("Searching...");
+    setStatus("GPS Active");
 
-    try {
-      subscriptionRef.current = await Location.watchPositionAsync(
-        {
-          accuracy:         Location.Accuracy.BestForNavigation,
-          timeInterval:     1000,
-          distanceInterval: 2,
-        },
-        (loc) => {
-          if (!loc?.coords) { setStatus("No Signal"); return; }
-
-          const { latitude, longitude, speed: spd, accuracy: acc } = loc.coords;
-
-          setLat(latitude);
-          setLon(longitude);
-          setSpeed(spd || 0);
-          setAccuracy(acc);
-          setStatus("GPS Active");
-        }
-      );
-      return true;
-    } catch (e) {
-      setStatus("GPS Failed");
-      return false;
-    }
+    watchRef.current = await Location.watchPositionAsync(
+      {
+        accuracy:         Location.Accuracy.High,
+        timeInterval:     1000,
+        distanceInterval: 1,
+      },
+      (loc) => {
+        setLat(loc.coords.latitude);
+        setLon(loc.coords.longitude);
+        setSpeed(loc.coords.speed);
+        setAccuracy(loc.coords.accuracy);
+      }
+    );
   };
 
-  useEffect(() => {
-    startGPS();
-    return () => {
-      if (subscriptionRef.current) {
-        try { subscriptionRef.current.remove(); } catch (e) {}
-      }
-    };
-  }, []);
+  // ── إيقاف GPS ─────────────────────────────────────
+  const stopGPS = () => {
+    if (watchRef.current) {
+      watchRef.current.remove();
+      watchRef.current = null;
+    }
+    setStatus("GPS Stopped");
+    setSpeed(null);
+    setAccuracy(null);
+  };
 
-  return { lat, lon, speed, accuracy, status, startGPS };
+  return { lat, lon, speed, accuracy, status, startGPS, stopGPS };
 }

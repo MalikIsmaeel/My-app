@@ -10,60 +10,65 @@ export default function BottomButtons({
   onStop,
   onReset,
   onRefreshGPS,
+  onStopGPS,       // ✅ الجديد
 }) {
   return (
-    <View style={styles.container}>
+    <View>
 
-      {/* ── قبل البدء ── */}
+      {/* ── الصف الأول: Start / Pause ── */}
+      <View style={styles.row}>
+        {!isRunning ? (
+          /* زر START */
+          <TouchableOpacity style={[styles.mainBtn, styles.startBtn]} onPress={onStart}>
+            <MaterialIcons name="play-arrow" size={26} color="#000" />
+            <Text style={styles.startBtnText}>START SESSION</Text>
+          </TouchableOpacity>
+        ) : (
+          /* زر PAUSE / RESUME */
+          <TouchableOpacity style={[styles.mainBtn, styles.pauseBtn]} onPress={onPause}>
+            <MaterialIcons
+              name={isPaused ? "play-arrow" : "pause"}
+              size={26}
+              color="#ff6700"
+            />
+            <Text style={styles.pauseBtnText}>
+              {isPaused ? "RESUME" : "PAUSE"}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* زر REFRESH GPS */}
+        <TouchableOpacity style={styles.iconBtn} onPress={onRefreshGPS}>
+          <MaterialIcons name="gps-fixed" size={22} color="#0da6f2" />
+        </TouchableOpacity>
+      </View>
+
+      {/* ── الصف الثاني: End Session + Stop GPS ── */}
+      <View style={styles.row}>
+        {/* END ANALYSIS SESSION */}
+        {isRunning && (
+          <TouchableOpacity style={[styles.endBtn, { flex: 2, marginRight: 8 }]} onPress={onStop}>
+            <View style={styles.redDot} />
+            <Text style={styles.endBtnText}>END ANALYSIS SESSION</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* STOP GPS ✅ */}
+        <TouchableOpacity
+          style={[styles.stopGPSBtn, isRunning ? { flex: 1 } : { flex: 1 }]}
+          onPress={onStopGPS}
+        >
+          <MaterialIcons name="gps-off" size={18} color="#FF3E3E" />
+          <Text style={styles.stopGPSText}>STOP GPS</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── زر RESET (ظاهر بس لو الجلسة وقفت) ── */}
       {!isRunning && (
-        <>
-          <TouchableOpacity style={styles.startBtn} onPress={onStart}>
-            <MaterialIcons name="play-arrow" size={24} color="#000" />
-            <Text style={styles.startTxt}>START SESSION</Text>
-          </TouchableOpacity>
-
-          <View style={{ height: 10 }} />
-
-          <View style={styles.row}>
-            <TouchableOpacity style={[styles.refreshBtn, { flex: 1 }]} onPress={onRefreshGPS}>
-              <MaterialIcons name="gps-fixed" size={18} color="#fff" />
-              <Text style={styles.refreshTxt}>REFRESH GPS</Text>
-            </TouchableOpacity>
-
-            <View style={{ width: 10 }} />
-
-            <TouchableOpacity style={[styles.resetBtn, { flex: 1 }]} onPress={onReset}>
-              <MaterialIcons name="refresh" size={18} color="#fff" />
-              <Text style={styles.resetTxt}>RESET</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
-
-      {/* ── أثناء الجلسة ── */}
-      {isRunning && (
-        <>
-          <View style={styles.row}>
-            <TouchableOpacity style={styles.pauseBtn} onPress={onPause}>
-              <MaterialIcons name={isPaused ? "play-arrow" : "pause"} size={22} color="#000" />
-              <Text style={styles.pauseTxt}>{isPaused ? "RESUME" : "PAUSE"}</Text>
-            </TouchableOpacity>
-
-            <View style={{ width: 10 }} />
-
-            <TouchableOpacity style={styles.stopBtn} onPress={onStop}>
-              <MaterialIcons name="stop" size={22} color="#fff" />
-              <Text style={styles.stopTxt}>END SESSION</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ height: 10 }} />
-
-          <TouchableOpacity style={styles.resetBtn} onPress={onReset}>
-            <MaterialIcons name="refresh" size={18} color="#fff" />
-            <Text style={styles.resetTxt}>RESET</Text>
-          </TouchableOpacity>
-        </>
+        <TouchableOpacity style={styles.resetBtn} onPress={onReset}>
+          <MaterialIcons name="refresh" size={18} color="#aaa" />
+          <Text style={styles.resetBtnText}>RESET</Text>
+        </TouchableOpacity>
       )}
 
     </View>
@@ -71,37 +76,115 @@ export default function BottomButtons({
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: "column" },
-  row:       { flexDirection: "row" },
+  row: {
+    flexDirection: "row",
+    marginBottom: 10,
+    alignItems: "center",
+  },
 
+  // ── START ──
+  mainBtn: {
+    flex: 2,
+    height: 60,
+    borderRadius: 30,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
   startBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: "#32FF7E", paddingVertical: 18, borderRadius: 50,
+    backgroundColor: "#0da6f2",
   },
-  startTxt: { color: "#000", fontWeight: "700", fontSize: 16, marginLeft: 6 },
+  startBtnText: {
+    color: "#000",
+    marginLeft: 6,
+    letterSpacing: 2,
+    fontWeight: "700",
+  },
 
+  // ── PAUSE ──
   pauseBtn: {
-    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: "#FFD32A", paddingVertical: 16, borderRadius: 50,
+    backgroundColor: "rgba(255,103,0,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255,103,0,0.4)",
   },
-  pauseTxt: { color: "#000", fontWeight: "700", fontSize: 15, marginLeft: 4 },
-
-  stopBtn: {
-    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: "#FF3E3E", paddingVertical: 16, borderRadius: 50,
+  pauseBtnText: {
+    color: "#ff6700",
+    marginLeft: 6,
+    letterSpacing: 2,
+    fontWeight: "700",
   },
-  stopTxt: { color: "#fff", fontWeight: "700", fontSize: 15, marginLeft: 4 },
 
-  refreshBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: "#0da6f2", paddingVertical: 12, borderRadius: 50,
+  // ── GPS REFRESH icon ──
+  iconBtn: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(13,166,242,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(13,166,242,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  refreshTxt: { color: "#fff", fontWeight: "700", fontSize: 14, marginLeft: 6 },
 
+  // ── END SESSION ──
+  endBtn: {
+    height: 45,
+    borderRadius: 30,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,0,127,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,0,127,0.3)",
+  },
+  redDot: {
+    width: 8, height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ff007f",
+    marginRight: 6,
+  },
+  endBtnText: {
+    color: "#ff007f",
+    letterSpacing: 1.5,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  // ── STOP GPS ✅ ──
+  stopGPSBtn: {
+    height: 45,
+    borderRadius: 30,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,62,62,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,62,62,0.35)",
+  },
+  stopGPSText: {
+    color: "#FF3E3E",
+    marginLeft: 5,
+    letterSpacing: 1.5,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  // ── RESET ──
   resetBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.1)", paddingVertical: 12,
-    borderRadius: 50, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
+    height: 40,
+    borderRadius: 30,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
-  resetTxt: { color: "#fff", fontWeight: "700", fontSize: 14, marginLeft: 6 },
+  resetBtnText: {
+    color: "#aaa",
+    marginLeft: 5,
+    letterSpacing: 1.5,
+    fontSize: 12,
+  },
 });

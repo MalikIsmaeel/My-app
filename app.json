@@ -1,52 +1,55 @@
 {
-    "expo":  {
-                 "name":  "My-app",
-                 "slug":  "My-app",
-                 "version":  "1.0.0",
-                 "orientation":  "portrait",
-                 "icon":  "./assets/icon.png",
-                 "userInterfaceStyle":  "light",
-                 "newArchEnabled":  true,
-                 "splash":  {
-                                "image":  "./assets/splash-icon.png",
-                                "resizeMode":  "contain",
-                                "backgroundColor":  "#ffffff"
-                            },
-                 "ios":  {
-                             "supportsTablet":  true,
-                             "infoPlist":  {
-                                               "NSLocationWhenInUseUsageDescription":  "This app needs access to your location to track movement.",
-                                               "NSLocationAlwaysAndWhenInUseUsageDescription":  "This app needs access to your location to track movement even when the screen is off."
-                                           }
-                         },
-                 "android":  {
-                                 "adaptiveIcon":  {
-                                                      "foregroundImage":  "./assets/adaptive-icon.png",
-                                                      "backgroundColor":  "blue"
-                                                  },
-                                 "edgeToEdgeEnabled":  true,
-                                 "package":  "com.malik_foi.Myapp",
-                                 "permissions":  [
-                                                     "ACCESS_FINE_LOCATION",
-                                                     "ACCESS_COARSE_LOCATION",
-                                                     "ACCESS_BACKGROUND_LOCATION"
-                                                 ]
-                             },
-                 "plugins":  [
-                                 [
-                                     "expo-location",
-                                     {
-                                         "locationAlwaysAndWhenInUsePermission":  "Allow the app to access your location for movement tracking."
-                                     }
-                                 ]
-                             ],
-                 "web":  {
-                             "favicon":  "./assets/favicon.png"
-                         },
-                 "extra":  {
-                               "eas":  {
-                                           "projectId":  "0a27f210-bf49-4584-8c8d-2823dac0c0bf"
-                                       }
-                           }
-             }
+  "expo": {
+    "name": "My-app",
+    "slug": "My-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to track movement.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to your location to track movement even when the screen is off.",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0F14"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.malik_foi.Myapp",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow the app to access your location for movement tracking."
+        }
+      ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0a27f210-bf49-4584-8c8d-2823dac0c0bf"
+      }
+    }
+  }
 }

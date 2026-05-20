@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Notes>
+  <CreditNote id="CN-001">
+    <Date>2026-05-20</Date>
+    <Customer>
+      <Name>Customer Name</Name>
+      <Address>123 Example Road, City, Country</Address>
+      <Email>customer@example.com</Email>
+    </Customer>
+    <Reference>INV-1001</Reference>
+    <Reason>Overpayment adjustment</Reason>
+    <Items>
+      <Item>
+        <Description>Service Charge Adjustment</Description>
+        <Quantity>1</Quantity>
+        <UnitPrice>150.00</UnitPrice>
+        <Amount>150.00</Amount>
+      </Item>
+    </Items>
+    <Total>150.00</Total>
+    <Comments>Credit note issued for invoice correction.</Comments>
+  </CreditNote>
+
+  <DebitNote id="DN-001">
+    <Date>2026-05-20</Date>
+    <Customer>
+      <Name>Customer Name</Name>
+      <Address>123 Example Road, City, Country</Address>
+      <Email>customer@example.com</Email>
+    </Customer>
+    <Reference>INV-1002</Reference>
+    <Reason>Additional service charge</Reason>
+    <Items>
+      <Item>
+        <Description>Additional Consultation Fee</Description>
+        <Quantity>1</Quantity>
+        <UnitPrice>200.00</UnitPrice>
+        <Amount>200.00</Amount>
+      </Item>
+    </Items>
+    <Total>200.00</Total>
+    <Comments>Debit note issued for extra service provided.</Comments>
+  </DebitNote>
+</Notes>
